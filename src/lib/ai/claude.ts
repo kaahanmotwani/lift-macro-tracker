@@ -62,6 +62,22 @@ function refusalDetail(response: unknown): string | undefined {
   return details?.explanation ?? undefined;
 }
 
+type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+
+/**
+ * Adaptive thinking and the `effort` control exist on the Claude 5 models, but
+ * Haiku 4.5 predates both and rejects a request that includes either. Haiku is
+ * offered in Settings as the cheap option, so for it we send neither: it simply
+ * answers without the extra reasoning pass, which is a large part of why it's
+ * cheaper.
+ */
+function reasoningFor(model: string, effort: Effort) {
+  const supported = !model.startsWith("claude-haiku");
+  return supported
+    ? { thinking: { type: "adaptive" as const }, effort }
+    : { thinking: undefined, effort: undefined };
+}
+
 /**
  * One structured call to Claude. The Zod schema is enforced by the API, so the
  * return value is already the right shape — no defensive JSON parsing, no
@@ -71,17 +87,19 @@ export async function askForStructure<T extends z.ZodType>(opts: {
   schema: T;
   system: string;
   content: Content;
-  effort?: "low" | "medium" | "high" | "xhigh" | "max";
+  effort?: Effort;
   maxTokens?: number;
 }): Promise<z.infer<T>> {
   const { client, model } = await getClaude();
 
+  const reasoning = reasoningFor(model, opts.effort ?? "medium");
+
   const response = await client.messages.parse({
     model,
     max_tokens: opts.maxTokens ?? 16000,
-    thinking: { type: "adaptive" },
+    ...(reasoning.thinking ? { thinking: reasoning.thinking } : {}),
     output_config: {
-      effort: opts.effort ?? "medium",
+      ...(reasoning.effort ? { effort: reasoning.effort } : {}),
       format: zodOutputFormat(opts.schema),
     },
     system: opts.system,
@@ -107,16 +125,18 @@ export async function askForStructure<T extends z.ZodType>(opts: {
 export async function askForProse(opts: {
   system: string;
   content: Content;
-  effort?: "low" | "medium" | "high" | "xhigh" | "max";
+  effort?: Effort;
   maxTokens?: number;
 }): Promise<string> {
   const { client, model } = await getClaude();
 
+  const reasoning = reasoningFor(model, opts.effort ?? "high");
+
   const response = await client.messages.create({
     model,
     max_tokens: opts.maxTokens ?? 16000,
-    thinking: { type: "adaptive" },
-    output_config: { effort: opts.effort ?? "high" },
+    ...(reasoning.thinking ? { thinking: reasoning.thinking } : {}),
+    ...(reasoning.effort ? { output_config: { effort: reasoning.effort } } : {}),
     system: opts.system,
     messages: [{ role: "user", content: opts.content }],
   });

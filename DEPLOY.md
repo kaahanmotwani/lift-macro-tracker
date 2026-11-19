@@ -107,9 +107,21 @@ On Android: Chrome menu → **Install app**.
 |---|---|
 | Supabase free tier | 500 MB database, 1 GB file storage. A few years of daily logging is well under that. |
 | Vercel free tier | Plenty for personal use. |
-| Anthropic | Roughly **1–4¢** per notes import or photo estimate, and **5–15¢** for a full insights analysis, using Claude Opus 5. Switch to Sonnet or Haiku in Settings to cut that several-fold. |
+| Anthropic | Pay per use — depends on the model you pick in Settings (below). |
 
-Realistically: **a few dollars a month if you use the AI features daily, and $0 if you just log by hand.**
+### AI cost by model
+
+Rough estimates per action, from Anthropic's per-token prices. Your real numbers appear under **Usage** in the Anthropic console.
+
+| Model (Settings → Claude model) | Notes import | Meal photo | Insights analysis |
+|---|---|---|---|
+| **Opus 5** — most capable | ~10–15¢ | ~3–6¢ | ~20–30¢ |
+| **Sonnet 5** — about 40% cheaper | ~5–10¢ | ~2–4¢ | ~12–18¢ |
+| **Haiku 4.5** — cheapest | ~1¢ | <1¢ | ~2–4¢ |
+
+Most of the gap between Opus/Sonnet and Haiku is the *thinking* step: the Claude 5 models reason before answering and that reasoning is billed like output. Haiku skips it — much cheaper, but noticeably worse at messy shorthand, supersets, and noticing patterns in insights.
+
+Realistically: importing daily on Sonnet is **a few dollars a month**; on Haiku, well under a dollar. Logging by hand costs nothing.
 
 ---
 
