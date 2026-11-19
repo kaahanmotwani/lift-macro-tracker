@@ -21,9 +21,11 @@ You don't need to install anything or write any code.
 3. Wait ~2 minutes for it to finish setting up.
 4. In the left sidebar, click **SQL Editor** → **New query**.
 5. Open [`supabase/schema.sql`](supabase/schema.sql) in this repository, copy **all** of it, paste it into the editor, and click **Run**. You should see "Success. No rows returned."
-6. In the left sidebar, click **Project Settings** (the gear) → **API**. Keep this tab open — you need two values from it:
-   - **Project URL**
-   - **anon public** key (the long one under "Project API keys")
+6. In the left sidebar, click **Project Settings** (the gear) → **API Keys**. Keep this tab open — you need two values:
+   - **Project URL** — just `https://<something>.supabase.co`. Some Supabase pages show it with `/rest/v1/` on the end; the app tolerates that, but the bare form is correct.
+   - **Publishable key** (starts `sb_publishable_`). Older projects call it the **anon public** key instead (a long `eyJ…` string) — either works.
+
+   > Never use the **Secret** / **service_role** key here. It bypasses Row Level Security.
 
 > The `anon` key is meant to be public. What protects your data is Row Level Security, which the schema you just ran turns on for every table.
 
@@ -39,7 +41,7 @@ You don't need to install anything or write any code.
    | Name | Value |
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | The Project URL from step 1.6 |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anon public key from step 1.6 |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The publishable (or anon public) key from step 1.6 |
    | `APP_ENCRYPTION_KEY` | See below |
 
    For `APP_ENCRYPTION_KEY`, you need 32 random bytes. On a Mac, open Terminal and run:
@@ -123,6 +125,9 @@ If you'd rather keep it to yourself, go to Supabase → **Authentication → Pro
 
 **"APP_ENCRYPTION_KEY must decode to exactly 32 bytes"**
 The value isn't a valid 32-byte base64 string. Re-run `openssl rand -base64 32` and paste the entire output including the trailing `=`.
+
+**"Invalid path specified in request URL" when requesting a sign-in link**
+Your deployment predates the URL fix, or the Supabase URL has an extra path on it. Set `NEXT_PUBLIC_SUPABASE_URL` to the bare `https://<something>.supabase.co` and **redeploy** — `NEXT_PUBLIC_` values are baked in at build time, so editing the variable alone changes nothing until the next build.
 
 **Sign-in link opens but I'm still logged out**
 The Redirect URL in step 3 doesn't match your actual domain. It must be exactly `https://your-domain/auth/callback`, including `https://`.
