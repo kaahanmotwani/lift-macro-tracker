@@ -250,16 +250,22 @@ export async function parseNextChunk(importId: string): Promise<ChunkProgress> {
       // Extraction, not deep reasoning: medium keeps each part fast enough to
       // stay inside a hosted request's time limit, and cheaper.
       effort: "medium",
+      // Too large a shape for the API's strict mode; validated here instead.
+      strict: false,
     });
     await supabase
       .from("import_chunks")
       .update({ status: "done", result, updated_at: new Date().toISOString() })
       .eq("id", chunk.id);
   } catch (error) {
-    // Problems that will fail every part (no key, bad key) put the part back and
-    // stop the run, so fixing Settings and reloading picks up where it left off.
+    // Problems that will fail every part (no key, bad key, a request the API
+    // rejects outright) put the part back and stop the run, instead of burning
+    // through every part with the same error. Fixing the cause and pressing
+    // "Try again" picks up where it left off.
     const fatal =
-      error instanceof MissingKeyError || error instanceof Anthropic.AuthenticationError;
+      error instanceof MissingKeyError ||
+      error instanceof Anthropic.AuthenticationError ||
+      error instanceof Anthropic.BadRequestError;
     await supabase
       .from("import_chunks")
       .update({

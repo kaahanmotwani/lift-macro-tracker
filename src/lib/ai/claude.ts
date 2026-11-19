@@ -1,8 +1,9 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import type { z } from "zod";
+import { z } from "zod";
 import { blanksToNull, type Blankable } from "@/lib/ai/schemas";
+import { conformToSchema, extractJson, type JsonSchema } from "@/lib/ai/json";
 import { decryptSecret } from "@/lib/crypto";
 import { getProfile } from "@/lib/supabase/server";
 
@@ -83,9 +84,23 @@ function reasoningFor(model: string, effort: Effort) {
 }
 
 /**
- * One structured call to Claude. The Zod schema is enforced by the API, so the
- * return value is already the right shape — no defensive JSON parsing, no
- * "sometimes it wraps it in a code fence".
+ * One structured call to Claude, returning data in the shape of `schema`.
+ *
+ * Two ways to get there:
+ *
+ *  - strict (default): the API constrains generation to the schema, so the
+ *    reply cannot be malformed. The cost is that the schema is compiled into a
+ *    grammar, and the API caps how big that grammar can be. Fine for the small
+ *    photo and micronutrient shapes.
+ *
+ *  - strict: false: the schema goes into the prompt, Claude writes plain JSON,
+ *    and we validate it here with the same Zod schema. No size cap. If the reply
+ *    doesn't validate, Claude is shown exactly what was wrong and asked once to
+ *    fix it. The importer uses this: workouts → exercises → sets → segments,
+ *    plus diet and weigh-ins, is too large to compile.
+ *
+ * A strict call that the API rejects for size falls back to the JSON path
+ * automatically, so a schema that grows later degrades instead of breaking.
  */
 export async function askForStructure<T extends z.ZodType>(opts: {
   schema: T;
@@ -93,22 +108,40 @@ export async function askForStructure<T extends z.ZodType>(opts: {
   content: Content;
   effort?: Effort;
   maxTokens?: number;
+  strict?: boolean;
 }): Promise<Blankable<z.infer<T>>> {
   const { client, model } = await getClaude();
 
+  if (opts.strict === false) {
+    return blanksToNull<z.infer<T>>(await askForJson(client, model, opts));
+  }
+
   const reasoning = reasoningFor(model, opts.effort ?? "medium");
 
-  const response = await client.messages.parse({
-    model,
-    max_tokens: opts.maxTokens ?? 16000,
-    ...(reasoning.thinking ? { thinking: reasoning.thinking } : {}),
-    output_config: {
-      ...(reasoning.effort ? { effort: reasoning.effort } : {}),
-      format: zodOutputFormat(opts.schema),
-    },
-    system: opts.system,
-    messages: [{ role: "user", content: opts.content }],
-  });
+  let response;
+  try {
+    response = await client.messages.parse({
+      model,
+      max_tokens: opts.maxTokens ?? 16000,
+      ...(reasoning.thinking ? { thinking: reasoning.thinking } : {}),
+      output_config: {
+        ...(reasoning.effort ? { effort: reasoning.effort } : {}),
+        format: zodOutputFormat(opts.schema),
+      },
+      system: opts.system,
+      messages: [{ role: "user", content: opts.content }],
+    });
+  } catch (error) {
+    // The API reports an over-complex schema only through its message text
+    // ("compiled grammar is too large", "too many parameters with union types").
+    if (
+      error instanceof Anthropic.BadRequestError &&
+      /grammar|union types|schema.*(complex|large)/i.test(error.message)
+    ) {
+      return blanksToNull<z.infer<T>>(await askForJson(client, model, opts));
+    }
+    throw error;
+  }
 
   if (response.stop_reason === "refusal") {
     throw new RefusalError(refusalDetail(response));
@@ -124,6 +157,76 @@ export async function askForStructure<T extends z.ZodType>(opts: {
 
   // Text fields come back as "" when unknown (see schemas.ts); normalize to null.
   return blanksToNull(response.parsed_output as z.infer<T>);
+}
+
+/** The JSON-in-the-prompt path described above. Returns validated data. */
+async function askForJson<T extends z.ZodType>(
+  client: Anthropic,
+  model: string,
+  opts: { schema: T; system: string; content: Content; effort?: Effort; maxTokens?: number },
+): Promise<z.infer<T>> {
+  const jsonSchema = z.toJSONSchema(opts.schema) as JsonSchema;
+  const system =
+    `${opts.system}\n\n## Output format\n` +
+    "Reply with exactly one JSON object and nothing else: no prose before or after, no Markdown code fences. " +
+    'It must match this JSON Schema. Every property is required: use "" for text that wasn\'t stated, ' +
+    "null for numbers that weren't stated, and [] for empty lists.\n\n" +
+    JSON.stringify(jsonSchema);
+
+  const reasoning = reasoningFor(model, opts.effort ?? "medium");
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: opts.content }];
+  let problem = "";
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    // Streamed so a long reply isn't cut off by an HTTP timeout; we only need
+    // the finished message.
+    const response = await client.messages
+      .stream({
+        model,
+        max_tokens: opts.maxTokens ?? 32000,
+        ...(reasoning.thinking ? { thinking: reasoning.thinking } : {}),
+        ...(reasoning.effort ? { output_config: { effort: reasoning.effort } } : {}),
+        system,
+        messages,
+      })
+      .finalMessage();
+
+    if (response.stop_reason === "refusal") {
+      throw new RefusalError(refusalDetail(response));
+    }
+    if (response.stop_reason === "max_tokens") {
+      throw new Error(
+        "The response was cut off before it finished. Try importing a smaller chunk of text.",
+      );
+    }
+
+    const text = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === "text")
+      .map((block) => block.text)
+      .join("\n");
+
+    const candidate = extractJson(text);
+    if (candidate === undefined) {
+      problem = "the reply was not a JSON object";
+    } else {
+      const parsed = opts.schema.safeParse(conformToSchema(jsonSchema, candidate));
+      if (parsed.success) return parsed.data;
+      problem = parsed.error.issues
+        .slice(0, 10)
+        .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+        .join("; ");
+    }
+
+    messages.push(
+      { role: "assistant", content: response.content },
+      {
+        role: "user",
+        content: `That reply didn't match the schema (${problem}). Reply again with the complete, corrected JSON object only.`,
+      },
+    );
+  }
+
+  throw new Error(`Claude's reply didn't match the expected format (${problem}).`);
 }
 
 /** One prose (Markdown) call to Claude. Used for insights, where structure would flatten the analysis. */
