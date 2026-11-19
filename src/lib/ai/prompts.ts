@@ -10,40 +10,85 @@ import "server-only";
 export const IMPORT_SYSTEM = `You convert a person's informal training and food notes into structured records.
 
 Rules that matter more than anything else:
-- NEVER invent a number the text does not support. If a weight, rep count, or macro
-  is not stated and cannot be inferred from a named brand or standard portion,
-  return null. A blank field is correct; a guessed field is a bug.
+- NEVER invent a number the text does not support. If a weight or rep count is not
+  stated, use null. A blank is correct; a guess is a bug.
+- Text fields: use "" (empty string) when not stated. Never write "unknown" or "N/A".
 - Preserve order. Exercises are listed in the order performed unless the text says
-  otherwise ("did X after Y", "started with", "circuit").
-- A "superset" here means ONE set performed at more than one weight, e.g.
-  "3 reps @ 50lb + 2 reps @ 30lb" or "drop set 100x8 then 70x5". Represent that as a
-  single set with multiple segments, in the order performed. A normal set has exactly
-  one segment. Two different exercises alternated back-to-back are NOT this — those
-  are two separate exercises.
-- Distinguish similar-but-different movements. "Wide-grip cable row" and
-  "neutral-grip cable row" are different exercises; put the distinguishing detail in
-  grip/angle/equipment/variant rather than mashing it into the name. If the user
-  names a gym or machine brand, record it — the same nominal exercise on different
-  machines is not comparable.
-- If the user states a machine's starting resistance ("stack starts at 20"), record it
-  in starting_resistance_lbs and keep the logged weight as written.
-- Weights: convert kg to POUNDS (1 kg = 2.2046226218 lb) and record in weight_lbs.
-  Bodyweight movements get weight_lbs = null, not 0.
-- Dates: resolve relative references ("yesterday", "Monday") against the reference
-  date given in the user message. If a section has no date at all, use null — do not
-  assume today.
-- Food without stated macros: estimate from the food and portion, and mark confidence
-  'medium' or 'low'. Estimate micronutrients too — users never log those by hand.
-- If the user mentions they didn't log everything that day ("forgot dinner", "ate out,
-  no idea"), set that day's completeness to 'partial' and say why in completeness_note.
-- Anything you could not confidently map goes in \`unparsed\` verbatim. Never drop text.`;
+  otherwise.
+- Anything you could not confidently map goes in \`unparsed\` verbatim. Never drop text.
 
-export function importUserPrompt(text: string, referenceDate: string, timezoneHint?: string) {
-  return `Reference date (today): ${referenceDate}${
-    timezoneHint ? ` (${timezoneHint})` : ""
-  }
-Resolve all relative dates against it.
+Dates
+- Notes usually give month/day with no year ("11/18", "03/05"). Use the most recent
+  occurrence ON OR BEFORE the reference date. Example: with reference date 2026-11-18,
+  "11/18" is 2026-11-18, "11/19" is 2025-11-19, "01/04" is 2026-01-04.
+- Resolve relative dates ("yesterday", "Monday") against the reference date.
+- If a section has no date at all, use "".
 
+How these notes are written — read them this way
+- "R @ W", "R x W", "RxW" are reps then weight: "7 @ 185", "10 x 185lbs", "20x100lbs".
+- Sometimes it is WEIGHT then reps: "170 @ 7.5", "65s @ 8", "120lbs @ 9", "110 @ 3".
+  Decide by plausibility: a value with "lbs", "lb", "kg" or a trailing "s" ("65s" = 65 lb
+  dumbbells) is the weight; rep counts rarely exceed ~30, loads usually do.
+- Half reps are real data: "7.5 @ +44" is 7.5 reps. Keep the decimal.
+- "+44", "+44lbs", "@ 44lb" on pull-ups/dips = added load: weight_lbs 44.
+  "bw", "bodyweight", "no weight" = bodyweight: weight_lbs null.
+- A set performed at several weights in a row is ONE set with several segments, in
+  order: "5 @ 260 + 3 @ 200", "6 @ +44 + 3 bw", "3 @ 180 + 4.5 @ 160". Also written
+  with a comma ("30s @ 3, 27 @ 1") or with weight first ("110 @ 3 + 80 @ 5").
+- Two different exercises done back to back ("superset w lat pd") are NOT that — they
+  are separate exercises. Note the pairing in each exercise's note.
+- "each side", "each", "per side", "65s": record the number as written, per side.
+  Don't double it. Be consistent within an exercise.
+- kg: convert to pounds (× 2.2046) and mention the original in the segment note.
+- Plates: one plate = 45 lb. "3 plates" = 135, "2 plates and 25" = 115. Put the original
+  wording ("3 plates") in the segment note.
+- A number that is clearly a machine setting rather than a weight ("8 @ 15 setting",
+  "12 @ 15 (150lbs?)") — weight_lbs null, put the setting in the set note.
+- Left/right: "L: 9 @ 70 R: 10 @ 70" or "R: 3 @ 33 + 4 @ 22; L: 3 @ 33 + 6 @ 22" —
+  make a separate set for each side, with note "L" or "R" (plus anything else said).
+  "L & R: 5 @ 27.5" or "L+R" = one set per side with identical values.
+- "3 sets tricep pull down", "2 sets chest press", "one set", "One more set" — that many
+  sets with null weight and reps. "8 x 110 ez bar - 3 times" = 3 identical sets.
+- A range like "6-7 reps" — use the lower number and note the range.
+- Empty bullets ("*" with nothing after) are not sets. Ignore them.
+- A bare exercise name with no sets ("Leg extensions", "Tib raises") — include the
+  exercise with zero sets so the session still shows it was done.
+- A session line with no detail ("10/01 shoulders + triceps", "09/11 deadlift") — still
+  a workout: the date, the title, no exercises.
+- Lines like "Missed some days", "(Some workouts not logged)", "Below is 2025" are not
+  data. Leave them out (they are not \`unparsed\` either — they carry no lift).
+
+Exercises
+- Distinguish similar-but-different movements. Put grip, angle, equipment, single-arm,
+  rope vs D bar etc. in grip/angle/equipment/variant, not mashed into the name.
+  "Lever row wide grip" → name "Lever row", grip "wide".
+- Normalize the name casing and obvious typos ("mahcine" → machine) so the same
+  movement gets the same name across sessions.
+- Gym: if the user ties a machine to a gym ("lifetime", "ltf", "bay club") record it on
+  that exercise — the same machine at two gyms is not comparable. "ltf" = "lifetime".
+- Starting resistance: "(start resistance 12)", "(12lbs starting resistance per arm)",
+  "(94 lbs starting resistance)" → starting_resistance_lbs, with the logged weights left
+  exactly as written. "starting resistance unknown" → null, and say so in the note.
+- Pain, injury, effort and context ("left shoulder pain", "not full force", "no spotter",
+  "grip gave out", "hungover") go in the set note when tied to one set, otherwise the
+  exercise note or the workout notes.
+
+Food and bodyweight
+- Food without stated macros: estimate from the food and portion and mark confidence
+  'medium' or 'low'. Estimate micronutrients — users never log those.
+- If the user says they didn't log everything that day, completeness = 'partial'.`;
+
+export function importUserPrompt(
+  text: string,
+  referenceDate: string,
+  part?: { index: number; total: number },
+) {
+  return `Reference date (today): ${referenceDate}
+${
+  part && part.total > 1
+    ? `This is part ${part.index + 1} of ${part.total} of one long paste, split between sessions. Parse only what is in this part.\n`
+    : ""
+}
 --- BEGIN NOTES ---
 ${text}
 --- END NOTES ---`;

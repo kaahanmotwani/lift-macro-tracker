@@ -8,6 +8,9 @@ import { formatDate, todayISO } from "@/lib/units";
 
 export const metadata = { title: "Import" };
 
+/** A meal-photo estimate is a single AI request that can take a minute. */
+export const maxDuration = 300;
+
 const EXAMPLE = `Mon — push day at Equinox
 incline db press 3x8 @ 60s, last set was rough
 cable fly, wide: 12,12,10 @ 30 (stack starts at 10)

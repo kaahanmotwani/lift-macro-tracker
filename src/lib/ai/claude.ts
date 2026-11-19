@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
+import { blanksToNull, type Blankable } from "@/lib/ai/schemas";
 import { decryptSecret } from "@/lib/crypto";
 import { getProfile } from "@/lib/supabase/server";
 
@@ -44,7 +45,10 @@ export async function getClaude(): Promise<{ client: Anthropic; model: string }>
   if (!apiKey) throw new MissingKeyError();
 
   return {
-    client: new Anthropic({ apiKey }),
+    // A long import makes many calls back to back; new Anthropic accounts have
+    // low per-minute limits, so lean on the SDK's 429 backoff (which honors the
+    // server's retry-after) rather than failing a chunk on the first throttle.
+    client: new Anthropic({ apiKey, maxRetries: 5 }),
     model: profile?.model || DEFAULT_MODEL,
   };
 }
@@ -89,7 +93,7 @@ export async function askForStructure<T extends z.ZodType>(opts: {
   content: Content;
   effort?: Effort;
   maxTokens?: number;
-}): Promise<z.infer<T>> {
+}): Promise<Blankable<z.infer<T>>> {
   const { client, model } = await getClaude();
 
   const reasoning = reasoningFor(model, opts.effort ?? "medium");
@@ -118,7 +122,8 @@ export async function askForStructure<T extends z.ZodType>(opts: {
     throw new Error("Claude returned a response that did not match the expected format.");
   }
 
-  return response.parsed_output as z.infer<T>;
+  // Text fields come back as "" when unknown (see schemas.ts); normalize to null.
+  return blanksToNull(response.parsed_output as z.infer<T>);
 }
 
 /** One prose (Markdown) call to Claude. Used for insights, where structure would flatten the analysis. */

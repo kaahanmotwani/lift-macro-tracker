@@ -1,80 +1,84 @@
 import { z } from "zod";
 
 /**
- * The shapes Claude is required to return. These are the contract between "some
- * text a human typed into the Notes app" and our database — and they're the
- * reason the importer is reliable: the model is *constrained* to this schema
- * rather than asked nicely to produce JSON.
+ * The shapes Claude is required to return. The API *enforces* these, which is
+ * what makes the importer reliable — but it also caps schema complexity: at most
+ * 16 properties may be union-typed, and every `.nullable()` field is a union
+ * (`number | null`).
  *
- * Everything is `.nullable()` rather than `.optional()` on purpose. The
- * structured-output engine handles a required-but-nullable field far more
- * predictably than an absent one, and "the user didn't say" is real information
- * we want to keep — an unstated weight becomes null, not a guess.
+ * So the convention is:
+ *   - Text fields are plain required strings, with "" meaning "not stated".
+ *     An empty string is exactly as honest as null — nothing gets invented.
+ *   - Numbers stay nullable, because there is no safe sentinel number: 0 is a
+ *     real weight (bodyweight) and a real rep count.
+ *
+ * After parsing, `blanksToNull` turns every "" back into null, so the rest of the
+ * app only ever sees null for "unknown". The exported types below describe that
+ * post-cleanup shape.
+ *
+ * Keep the union count at or under 16 — `npm run check:schemas` verifies it.
  */
+
+const text = (description: string) => z.string().describe(`${description} Use "" if not stated.`);
 
 export const SetSegmentSchema = z.object({
   weight_lbs: z
     .number()
     .nullable()
-    .describe("Weight in POUNDS as written on the plates/pin. null for bodyweight."),
-  reps: z.number().int().nullable(),
-  note: z.string().nullable(),
+    .describe("Load in POUNDS as written (convert kg). For weighted bodyweight moves like '+44', the added load. null = no added weight / bodyweight."),
+  reps: z.number().nullable().describe("Reps; half reps allowed (7.5). null if not stated."),
+  note: text("Anything about this segment."),
 });
 
 export const LiftSetSchema = z.object({
-  is_warmup: z.boolean().describe("True only if explicitly called a warmup."),
-  rpe: z.number().nullable().describe("Rate of perceived exertion 1-10, if stated."),
-  note: z.string().nullable().describe("Anything about this specific set: pain, form, failure."),
+  is_warmup: z.boolean().describe("True only if called a warmup."),
+  rpe: z.number().nullable().describe("RPE 1-10 if stated, else null."),
+  note: text("Per-set note: pain, form, side ('L'/'R'), machine setting, original plate count."),
   segments: z
     .array(SetSegmentSchema)
     .describe(
-      "One entry for a normal set. MULTIPLE entries when a single set was performed at " +
-        "more than one weight, e.g. '3 reps @ 50lb + 2 reps @ 30lb' is two segments.",
+      "One entry for a normal set. Several when one set used several weights in a row, " +
+        "e.g. '5 @ 260 + 3 @ 200' or '6 @ +44 + 3 bw' — in the order performed.",
     ),
 });
 
 export const LiftExerciseSchema = z.object({
-  name: z.string().describe("The movement name as the user would recognize it."),
-  equipment: z
-    .string()
-    .nullable()
-    .describe("barbell | dumbbell | machine | cable | smith | bodyweight | band | other"),
-  grip: z.string().nullable().describe("wide | narrow | neutral | pronated | supinated | ..."),
-  angle: z.string().nullable().describe("incline | decline | flat | 45 degree | ..."),
-  variant: z.string().nullable().describe("Any other distinguishing detail (single-arm, paused)."),
-  gym: z.string().nullable().describe("Gym or machine brand, if the user named one."),
-  primary_muscles: z.array(z.string()).describe("Main movers, lowercase, e.g. ['chest']."),
+  name: z.string().describe("The movement as the user would recognize it, without grip/angle/gym."),
+  equipment: text("barbell | dumbbell | machine | cable | smith | bodyweight | kettlebell | band | other."),
+  grip: text("wide | narrow | neutral | supinated | pronated | ..."),
+  angle: text("incline | decline | flat | ..."),
+  variant: text("Other distinguishing detail: single-arm, long head, rope, D bar, ..."),
+  gym: text("Gym name if the user tied this exercise to one (e.g. 'lifetime', 'bay club')."),
+  primary_muscles: z.array(z.string()).describe("Main movers, lowercase."),
   secondary_muscles: z.array(z.string()),
   starting_resistance_lbs: z
     .number()
     .nullable()
-    .describe("Only if the user stated the machine's baseline resistance."),
+    .describe("Only if the user stated the machine's starting resistance, else null."),
   unilateral: z.boolean(),
-  note: z.string().nullable(),
+  note: text("Exercise-level note."),
   sets: z.array(LiftSetSchema),
 });
 
 export const WorkoutSchema = z.object({
-  date: z.string().nullable().describe("YYYY-MM-DD. null if the text gave no date."),
-  title: z.string().nullable().describe("e.g. 'Push day'."),
-  gym: z.string().nullable(),
-  notes: z.string().nullable(),
-  exercises: z
-    .array(LiftExerciseSchema)
-    .describe("IN THE ORDER PERFORMED — assume written order is performed order."),
+  date: text("YYYY-MM-DD."),
+  title: text("e.g. 'Upper pull', 'Legs'."),
+  gym: text("Gym for the whole session if stated."),
+  notes: text("Session notes: sleep, illness, hangover, injuries, 'quick workout'."),
+  exercises: z.array(LiftExerciseSchema).describe("IN THE ORDER PERFORMED."),
 });
 
 export const MicronutrientSchema = z.object({
   name: z.string().describe("e.g. 'sodium', 'vitamin D', 'iron'"),
-  amount: z.string().describe("Include the unit, e.g. '480 mg'. Estimates are fine."),
+  amount: z.string().describe("With unit, e.g. '480 mg'. Estimates are fine."),
 });
 
 export const DietEntrySchema = z.object({
   name: z.string(),
-  brand: z.string().nullable(),
+  brand: text("Brand if known."),
   meal: z.enum(["breakfast", "lunch", "dinner", "snack", "unspecified"]),
   qty: z.number().nullable(),
-  unit: z.string().nullable().describe("g, oz, cup, serving, slice, ..."),
+  unit: text("g, oz, cup, serving, slice, ..."),
   kcal: z.number().nullable(),
   protein_g: z.number().nullable(),
   carbs_g: z.number().nullable(),
@@ -84,24 +88,24 @@ export const DietEntrySchema = z.object({
   confidence: z
     .enum(["high", "medium", "low"])
     .describe("high = user gave numbers; medium = named brand/portion; low = rough guess."),
-  note: z.string().nullable(),
+  note: text("Portion assumption or caveat."),
 });
 
 export const DietDaySchema = z.object({
-  date: z.string().nullable().describe("YYYY-MM-DD"),
+  date: text("YYYY-MM-DD."),
   completeness: z
     .enum(["complete", "partial", "untracked"])
     .describe("'partial' if the user said they missed logging something that day."),
-  completeness_note: z.string().nullable(),
+  completeness_note: text("What was missed."),
   entries: z.array(DietEntrySchema),
 });
 
 export const BodyweightSchema = z.object({
-  date: z.string().nullable().describe("YYYY-MM-DD"),
-  time: z.string().nullable().describe("HH:MM 24-hour, if stated."),
+  date: text("YYYY-MM-DD."),
+  time: text("HH:MM 24-hour."),
   weight: z.number(),
   unit: z.enum(["lb", "kg"]),
-  note: z.string().nullable(),
+  note: text("Note."),
 });
 
 /** What a natural-language import produces. One paste can contain all three. */
@@ -115,18 +119,11 @@ export const ImportResultSchema = z.object({
   summary: z.string().describe("One or two sentences on what you found and what you assumed."),
 });
 
-export type ImportResult = z.infer<typeof ImportResultSchema>;
-export type ParsedWorkout = z.infer<typeof WorkoutSchema>;
-export type ParsedDietDay = z.infer<typeof DietDaySchema>;
-export type ParsedDietEntry = z.infer<typeof DietEntrySchema>;
-export type ParsedBodyweight = z.infer<typeof BodyweightSchema>;
-
 /** What a meal photo produces — same entry shape, so it flows into the same writer. */
 export const PhotoEstimateSchema = z.object({
   entries: z.array(DietEntrySchema),
   summary: z.string().describe("What you saw and how confident you are in the portions."),
 });
-export type PhotoEstimate = z.infer<typeof PhotoEstimateSchema>;
 
 /** Daily micronutrient roll-up, generated rather than logged. */
 export const MicroSummarySchema = z.object({
@@ -139,4 +136,41 @@ export const MicroSummarySchema = z.object({
     }),
   ),
 });
-export type MicroSummary = z.infer<typeof MicroSummarySchema>;
+
+// -----------------------------------------------------------------------------
+// Post-parse cleanup: "" → null
+// -----------------------------------------------------------------------------
+
+/**
+ * The parsed shape with every free-text string widened to `string | null`.
+ * Enums (`"lb" | "kg"`) are left alone — they are never blank.
+ */
+export type Blankable<T> = T extends (infer U)[]
+  ? Blankable<U>[]
+  : T extends object
+    ? { [K in keyof T]: Blankable<T[K]> }
+    : string extends T
+      ? T | null
+      : T;
+
+/** Recursively converts empty/whitespace-only strings to null. */
+export function blanksToNull<T>(value: T): Blankable<T> {
+  if (typeof value === "string") {
+    return (value.trim() === "" ? null : value) as Blankable<T>;
+  }
+  if (Array.isArray(value)) return value.map(blanksToNull) as Blankable<T>;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, blanksToNull(v)]),
+    ) as Blankable<T>;
+  }
+  return value as Blankable<T>;
+}
+
+export type ImportResult = Blankable<z.infer<typeof ImportResultSchema>>;
+export type ParsedWorkout = ImportResult["workouts"][number];
+export type ParsedDietDay = ImportResult["diet_days"][number];
+export type ParsedDietEntry = ParsedDietDay["entries"][number];
+export type ParsedBodyweight = ImportResult["bodyweight"][number];
+export type PhotoEstimate = Blankable<z.infer<typeof PhotoEstimateSchema>>;
+export type MicroSummary = Blankable<z.infer<typeof MicroSummarySchema>>;

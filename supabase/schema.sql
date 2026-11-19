@@ -116,7 +116,7 @@ create table if not exists public.set_segments (
   set_id        uuid not null references public.workout_sets(id) on delete cascade,
   segment_index int not null,                  -- 1-based, order performed
   weight_lbs    numeric,                       -- as logged (plates / pin). NULL = bodyweight
-  reps          int,
+  reps          numeric,                       -- half reps are real data: 7.5
   notes         text,
   created_at    timestamptz not null default now()
 );
@@ -273,12 +273,29 @@ create table if not exists public.imports (
   raw_text     text,
   image_path   text,
   model        text,
-  status       text not null default 'parsed' check (status in ('parsed','applied','failed')),
+  status       text not null default 'parsed' check (status in ('parsing','parsed','applied','failed')),
   parsed       jsonb,
   error        text,
   created_at   timestamptz not null default now()
 );
 create index if not exists imports_user_idx on public.imports(user_id, created_at desc);
+
+-- A long paste (months of notes) is too big for one AI request, so it's split
+-- between sessions and each piece is parsed in its own request. One row per piece
+-- lets those requests run independently and resume if the page is closed midway.
+create table if not exists public.import_chunks (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  import_id   uuid not null references public.imports(id) on delete cascade,
+  idx         int not null,
+  text        text not null,
+  status      text not null default 'pending'
+              check (status in ('pending','parsing','done','failed')),
+  result      jsonb,
+  error       text,
+  updated_at  timestamptz not null default now(),
+  unique (import_id, idx)
+);
 
 create table if not exists public.insights (
   id            uuid primary key default gen_random_uuid(),
@@ -318,7 +335,7 @@ begin
   foreach t in array array[
     'profiles','exercises','workouts','workout_exercises','workout_sets','set_segments',
     'food_items','recipes','recipe_items','diet_days','diet_entries','targets',
-    'bodyweight_logs','imports','insights'
+    'bodyweight_logs','imports','import_chunks','insights'
   ] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists %I on public.%I', t || '_owner', t);
@@ -334,7 +351,7 @@ begin
   foreach t in array array[
     'exercises','workouts','workout_exercises','workout_sets','set_segments',
     'food_items','recipes','recipe_items','diet_days','diet_entries','targets',
-    'bodyweight_logs','imports','insights'
+    'bodyweight_logs','imports','import_chunks','insights'
   ] loop
     execute format(
       'create policy %I on public.%I for all using (auth.uid() = user_id) with check (auth.uid() = user_id)',
@@ -375,3 +392,16 @@ begin
       t || '_touch', t);
   end loop;
 end $$;
+
+-- -----------------------------------------------------------------------------
+-- UPGRADES for databases created from an earlier version of this file.
+-- `create table if not exists` won't change an existing table, so column and
+-- constraint changes are applied here. All of it is safe to re-run.
+-- -----------------------------------------------------------------------------
+alter table public.set_segments alter column reps type numeric using reps::numeric;
+
+alter table public.imports drop constraint if exists imports_status_check;
+alter table public.imports add constraint imports_status_check
+  check (status in ('parsing','parsed','applied','failed'));
+
+grant select, insert, update, delete on public.import_chunks to authenticated;

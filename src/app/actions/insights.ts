@@ -209,7 +209,7 @@ export async function summarizeMicros(
     );
 
     revalidatePath("/diet");
-    return { ok: true, data: result.summary };
+    return { ok: true, data: result.summary ?? undefined };
   } catch (error) {
     return { ok: false, error: explainAiError(error) };
   }

@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProfile, getSupabase } from "@/lib/supabase/server";
-import { applyImport, deleteImport } from "@/app/actions/import";
+import { applyImport, deleteImport, retryFailedChunks } from "@/app/actions/import";
+import { ImportProgress } from "./import-progress";
 import { Badge, Card, Empty } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/form";
 import { TopBar } from "@/components/nav";
 import { formatDate, fromLbs, round, todayISO } from "@/lib/units";
 import type { ImportResult } from "@/lib/ai/schemas";
+
+/**
+ * Reading one piece of a long paste can take a minute or two; allow up to the
+ * hosted maximum so a slow piece isn't cut off. (Server actions run in the
+ * function of the page that invokes them, so this covers parseNextChunk too.)
+ */
+export const maxDuration = 300;
 
 /**
  * The review screen. Everything Claude extracted is shown exactly as it will be
@@ -25,6 +33,35 @@ export default async function ReviewImportPage({
     getProfile(),
   ]);
   if (!record) notFound();
+
+  // Still being read: show progress and drive the remaining pieces from the browser.
+  if (record.status === "parsing") {
+    const { data: chunks } = await supabase
+      .from("import_chunks")
+      .select("status")
+      .eq("import_id", record.id);
+    const total = chunks?.length ?? 0;
+    const completed = (chunks ?? []).filter((c) => c.status === "done" || c.status === "failed").length;
+    return (
+      <main>
+        <TopBar
+          title="Importing"
+          right={
+            <Link href="/import" className="text-sm text-muted">
+              Back
+            </Link>
+          }
+        />
+        <ImportProgress importId={record.id} initialCompleted={completed} total={total} />
+      </main>
+    );
+  }
+
+  const { count: failedParts } = await supabase
+    .from("import_chunks")
+    .select("id", { count: "exact", head: true })
+    .eq("import_id", record.id)
+    .eq("status", "failed");
 
   const unit = profile?.weight_unit ?? "lb";
   const parsed = record.parsed as ImportResult | null;
@@ -61,10 +98,18 @@ export default async function ReviewImportPage({
         {parsed?.summary && (
           <Card title="What Claude found">
             <p className="text-sm leading-relaxed">{parsed.summary}</p>
+            {!applied && (failedParts ?? 0) > 0 && (
+              <form action={retryFailedChunks} className="mt-3">
+                <input type="hidden" name="import_id" value={record.id} />
+                <SubmitButton variant="secondary" pendingLabel="Re-queuing…">
+                  Retry the {failedParts} part{failedParts === 1 ? "" : "s"} that failed
+                </SubmitButton>
+              </form>
+            )}
           </Card>
         )}
 
-        {parsed && !applied ? (
+        {parsed && record.status === "parsed" ? (
           <ActionForm action={applyImport} className="space-y-4">
             <input type="hidden" name="import_id" value={record.id} />
             <input type="hidden" name="fallback_date" value={todayISO()} />

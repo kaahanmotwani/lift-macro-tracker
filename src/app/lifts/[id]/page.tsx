@@ -194,7 +194,8 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                             <Input
                               name={`seg_reps_${seg.id}`}
                               type="number"
-                              inputMode="numeric"
+                              step="0.5"
+                              inputMode="decimal"
                               defaultValue={seg.reps ?? ""}
                               placeholder="—"
                               className="tabular"
