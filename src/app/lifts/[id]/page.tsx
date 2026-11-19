@@ -56,7 +56,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
       <TopBar
         title={workout.title ?? formatDate(workout.date)}
         right={
-          <Link href="/lifts" className="text-sm text-[--color-muted]">
+          <Link href="/lifts" className="text-sm text-muted">
             Done
           </Link>
         }
@@ -85,7 +85,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
             </div>
           </form>
 
-          <form action={deleteWorkout} className="mt-3 border-t border-[--color-line] pt-3">
+          <form action={deleteWorkout} className="mt-3 border-t border-line pt-3">
             <input type="hidden" name="id" value={workout.id} />
             <SubmitButton variant="danger" pendingLabel="Deleting…">
               Delete this session
@@ -103,16 +103,16 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
           return (
             <section
               key={block.id}
-              className="rounded-2xl border border-[--color-line] bg-[--color-surface] p-4"
+              className="rounded-2xl border border-line bg-surface p-4"
             >
               <header className="mb-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 className="truncate font-semibold">
-                    <Link href={`/exercises/${block.exercise_id}`} className="hover:text-[--color-accent]">
+                    <Link href={`/exercises/${block.exercise_id}`} className="hover:text-accent">
                       {blockIndex + 1}. {ex?.name}
                     </Link>
                   </h2>
-                  {detail && <p className="truncate text-xs text-[--color-muted]">{detail}</p>}
+                  {detail && <p className="truncate text-xs text-muted">{detail}</p>}
                   {Number(ex?.starting_resistance_lbs) > 0 && (
                     <p className="mt-1">
                       <Badge>
@@ -122,7 +122,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                     </p>
                   )}
                   {previous.get(block.id) && (
-                    <p className="mt-1 text-xs text-[--color-accent]">{previous.get(block.id)}</p>
+                    <p className="mt-1 text-xs text-accent">{previous.get(block.id)}</p>
                   )}
                 </div>
                 <div className="flex shrink-0 gap-1">
@@ -157,14 +157,14 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                   return (
                     <div
                       key={set.id}
-                      className="rounded-xl border border-[--color-line] bg-[--color-surface-2] p-2.5"
+                      className="rounded-xl border border-line bg-surface-2 p-2.5"
                     >
                       <input type="hidden" name="set_id" value={set.id} />
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-medium text-[--color-muted]">
+                        <span className="text-xs font-medium text-muted">
                           Set {set.set_index}
                           {isSuperset && (
-                            <span className="ml-2 text-[--color-accent]">
+                            <span className="ml-2 text-accent">
                               superset · {segments.length} weights
                             </span>
                           )}
@@ -200,12 +200,12 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                               className="tabular"
                             />
                           </Field>
-                          <label className="flex h-11 items-center gap-1 text-xs text-[--color-muted]">
+                          <label className="flex h-11 items-center gap-1 text-xs text-muted">
                             <input
                               type="checkbox"
                               name={`seg_bw_${seg.id}`}
                               defaultChecked={seg.weight_lbs === null}
-                              className="h-4 w-4 accent-[--color-accent]"
+                              className="h-4 w-4 accent-accent"
                             />
                             BW
                           </label>
@@ -221,20 +221,20 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                         <button
                           type="submit"
                           form={`addseg-${set.id}`}
-                          className="text-xs text-[--color-accent]"
+                          className="text-xs text-accent"
                         >
                           + add a second weight to this set
                         </button>
-                        <label className="flex items-center gap-1 text-xs text-[--color-muted]">
+                        <label className="flex items-center gap-1 text-xs text-muted">
                           <input
                             type="checkbox"
                             name={`set_warmup_${set.id}`}
                             defaultChecked={set.is_warmup}
-                            className="h-4 w-4 accent-[--color-accent]"
+                            className="h-4 w-4 accent-accent"
                           />
                           warmup
                         </label>
-                        <label className="flex items-center gap-1 text-xs text-[--color-muted]">
+                        <label className="flex items-center gap-1 text-xs text-muted">
                           RPE
                           <input
                             name={`set_rpe_${set.id}`}
@@ -243,7 +243,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                             min="1"
                             max="10"
                             defaultValue={set.rpe ?? ""}
-                            className="tabular h-8 w-14 rounded-md border border-[--color-line] bg-[--color-surface] px-1.5"
+                            className="tabular h-8 w-14 rounded-md border border-line bg-surface px-1.5"
                           />
                         </label>
                       </div>
@@ -252,7 +252,7 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
                         name={`set_notes_${set.id}`}
                         defaultValue={set.notes ?? ""}
                         placeholder="note — pain, form, felt heavy…"
-                        className="mt-2 w-full rounded-lg border border-[--color-line] bg-[--color-surface] px-2 py-1.5 text-xs placeholder:text-[--color-muted]/60"
+                        className="mt-2 w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-xs placeholder:text-muted/60"
                       />
                     </div>
                   );

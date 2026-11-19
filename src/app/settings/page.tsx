@@ -40,23 +40,23 @@ export default async function SettingsPage() {
             </Field>
             <SubmitButton>Save</SubmitButton>
           </ActionForm>
-          <p className="mt-3 text-xs text-[--color-muted]">Signed in as {user.email}</p>
+          <p className="mt-3 text-xs text-muted">Signed in as {user.email}</p>
         </Card>
 
         <Card title="Anthropic API key">
-          <p className="mb-3 text-sm text-[--color-muted]">
+          <p className="mb-3 text-sm text-muted">
             AI features — importing notes, estimating meals from photos, insights — run on your
             own Anthropic account, so nobody else pays for or sees your requests. Typical cost is
             a few cents per import.
           </p>
-          <ol className="mb-3 list-decimal space-y-1 pl-5 text-sm text-[--color-muted]">
+          <ol className="mb-3 list-decimal space-y-1 pl-5 text-sm text-muted">
             <li>
               Go to{" "}
               <a
                 href="https://console.anthropic.com/settings/keys"
                 target="_blank"
                 rel="noreferrer"
-                className="text-[--color-accent] underline"
+                className="text-accent underline"
               >
                 console.anthropic.com
               </a>{" "}
@@ -85,7 +85,7 @@ export default async function SettingsPage() {
             <SubmitButton pendingLabel="Verifying…">Verify &amp; save</SubmitButton>
           </ActionForm>
 
-          <p className="mt-3 text-xs text-[--color-muted]">
+          <p className="mt-3 text-xs text-muted">
             Stored encrypted (AES-256-GCM). It&rsquo;s decrypted only in memory, only for your own
             requests, and never sent anywhere except Anthropic.
           </p>
@@ -149,20 +149,20 @@ export default async function SettingsPage() {
         </Card>
 
         <Card title="Install on your phone">
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-[--color-muted]">
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
             <li>Open this site in Safari on your iPhone.</li>
             <li>
-              Tap the Share button, then <strong className="text-[--color-text]">Add to Home Screen</strong>.
+              Tap the Share button, then <strong className="text-fg">Add to Home Screen</strong>.
             </li>
             <li>It opens full-screen with its own icon, like any other app.</li>
           </ol>
-          <p className="mt-2 text-xs text-[--color-muted]">
+          <p className="mt-2 text-xs text-muted">
             Android: Chrome menu → Install app. Same result.
           </p>
         </Card>
 
         <Card title="Your data">
-          <p className="mb-3 text-sm text-[--color-muted]">
+          <p className="mb-3 text-sm text-muted">
             Everything you&rsquo;ve logged, as JSON. Your data, your copy.
           </p>
           <Link href="/api/export" className="inline-block">

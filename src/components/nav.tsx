@@ -20,7 +20,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[--color-line] bg-[--color-surface]/95 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Main"
     >
@@ -34,7 +34,7 @@ export function BottomNav() {
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] transition ${
-                  active ? "text-[--color-accent]" : "text-[--color-muted]"
+                  active ? "text-accent" : "text-muted"
                 }`}
               >
                 <svg
@@ -62,7 +62,7 @@ export function BottomNav() {
 
 export function TopBar({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
-    <header className="sticky top-0 z-30 -mx-4 mb-4 border-b border-[--color-line] bg-[--color-ink]/90 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-30 -mx-4 mb-4 border-b border-line bg-ink/90 px-4 py-3 backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">{title}</h1>
         {right}

@@ -38,7 +38,7 @@ export default async function ExerciseProgressPage({
       <TopBar
         title={exercise.name}
         right={
-          <Link href="/exercises" className="text-sm text-[--color-muted]">
+          <Link href="/exercises" className="text-sm text-muted">
             Back
           </Link>
         }
@@ -110,10 +110,10 @@ export default async function ExerciseProgressPage({
             />
 
             <Card title="Session log">
-              <ul className="divide-y divide-[--color-line] text-sm">
+              <ul className="divide-y divide-line text-sm">
                 {[...history].reverse().map((h) => (
                   <li key={h.date} className="flex items-center justify-between py-2">
-                    <Link href={`/lifts/${h.workoutId}`} className="text-[--color-muted] hover:text-[--color-text]">
+                    <Link href={`/lifts/${h.workoutId}`} className="text-muted hover:text-fg">
                       {formatDate(h.date)}
                     </Link>
                     <span className="tabular">
@@ -121,7 +121,7 @@ export default async function ExerciseProgressPage({
                         ? "BW"
                         : `${round(fromLbs(h.topSetWeight, unit), 1)}${unit}`}{" "}
                       × {h.topSetReps ?? "?"}
-                      <span className="ml-2 text-xs text-[--color-muted]">
+                      <span className="ml-2 text-xs text-muted">
                         {h.sets} sets · {h.totalReps} reps
                       </span>
                     </span>
@@ -133,7 +133,7 @@ export default async function ExerciseProgressPage({
         )}
 
         {base > 0 && (
-          <p className="text-xs text-[--color-muted]">
+          <p className="text-xs text-muted">
             Charts add the {round(fromLbs(base, unit), 1)}
             {unit} starting resistance to every logged weight, so this line is comparable to
             free-weight movements.

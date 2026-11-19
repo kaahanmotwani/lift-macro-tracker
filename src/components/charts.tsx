@@ -59,7 +59,8 @@ export function LineChart({
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const clipId = useId();
+  // useId produces ":r0:" — the colons break `url(#…)` references, so strip them.
+  const clipId = `grad-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const W = 720;
   const H = height;
@@ -333,7 +334,7 @@ export function StackedBarChart({
       </svg>
 
       {hover !== null && (
-        <div className="mt-2 rounded-lg border border-[--color-line] bg-[--color-surface-2] px-3 py-2 text-xs">
+        <div className="mt-2 rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs">
           <div className="mb-1 font-medium">
             {formatDate(rows[hover].date)}
             {rows[hover].state === "partial" && (
@@ -342,7 +343,7 @@ export function StackedBarChart({
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             {seriesNames.map((n, s) => (
-              <span key={n} className="tabular text-[--color-muted]">
+              <span key={n} className="tabular text-muted">
                 <span
                   className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
                   style={{ background: colors[s % colors.length] }}
@@ -391,16 +392,16 @@ export function HBarChart({
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.label} className="flex items-center gap-3">
-            <span className="w-24 shrink-0 truncate text-xs capitalize text-[--color-muted]">
+            <span className="w-24 shrink-0 truncate text-xs capitalize text-muted">
               {item.label}
             </span>
-            <span className="h-4 flex-1 overflow-hidden rounded-md bg-[--color-surface-2]">
+            <span className="h-4 flex-1 overflow-hidden rounded-md bg-surface-2">
               <span
                 className="block h-full rounded-md"
                 style={{ width: `${(item.value / max) * 100}%`, background: SERIES.s1 }}
               />
             </span>
-            <span className="tabular w-14 shrink-0 text-right text-xs text-[--color-text]">
+            <span className="tabular w-14 shrink-0 text-right text-xs text-fg">
               {Math.round(item.value * 10) / 10} {unit}
             </span>
           </li>
@@ -426,10 +427,10 @@ function ChartShell({
   unit?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[--color-line] bg-[--color-surface] p-4">
-      <h3 className="mb-3 text-sm font-semibold text-[--color-text]">{title}</h3>
+    <div className="rounded-2xl border border-line bg-surface p-4">
+      <h3 className="mb-3 text-sm font-semibold text-fg">{title}</h3>
       {typeof children === "string" ? (
-        <p className="py-6 text-center text-sm text-[--color-muted]">{children}</p>
+        <p className="py-6 text-center text-sm text-muted">{children}</p>
       ) : (
         children
       )}
@@ -452,7 +453,7 @@ function Legend({ names, colors }: { names: string[]; colors: string[] }) {
   return (
     <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1">
       {names.map((n, i) => (
-        <li key={n} className="flex items-center gap-1.5 text-xs text-[--color-muted]">
+        <li key={n} className="flex items-center gap-1.5 text-xs text-muted">
           <span
             className="inline-block h-2.5 w-2.5 rounded-sm"
             style={{ background: colors[i % colors.length] }}
@@ -469,13 +470,13 @@ function Tooltip({ point, unit }: { point: Point | null; unit?: string }) {
     return <div className="mt-2 h-8" aria-hidden />;
   }
   return (
-    <div className="mt-2 rounded-lg border border-[--color-line] bg-[--color-surface-2] px-3 py-1.5 text-xs">
-      <span className="text-[--color-muted]">{formatDate(point.date)}</span>{" "}
-      <span className="tabular font-medium text-[--color-text]">
+    <div className="mt-2 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs">
+      <span className="text-muted">{formatDate(point.date)}</span>{" "}
+      <span className="tabular font-medium text-fg">
         {Math.round(point.value * 10) / 10}
         {unit}
       </span>
-      {point.label && <span className="ml-2 text-[--color-muted]">{point.label}</span>}
+      {point.label && <span className="ml-2 text-muted">{point.label}</span>}
       {point.state === "partial" && <span className="ml-2 text-amber-300">partial log</span>}
     </div>
   );
@@ -493,11 +494,11 @@ function DataTable({
 }) {
   return (
     <details className="mt-3">
-      <summary className="cursor-pointer text-xs text-[--color-muted]">View as table</summary>
-      <div className="mt-2 max-h-56 overflow-auto rounded-lg border border-[--color-line]">
+      <summary className="cursor-pointer text-xs text-muted">View as table</summary>
+      <div className="mt-2 max-h-56 overflow-auto rounded-lg border border-line">
         <table className="w-full text-left text-xs">
           <caption className="sr-only">{caption}</caption>
-          <thead className="sticky top-0 bg-[--color-surface-2] text-[--color-muted]">
+          <thead className="sticky top-0 bg-surface-2 text-muted">
             <tr>
               {head.map((h) => (
                 <th key={h} className="px-2 py-1 font-medium">
@@ -508,7 +509,7 @@ function DataTable({
           </thead>
           <tbody className="tabular">
             {body.map((row, i) => (
-              <tr key={i} className="border-t border-[--color-line]">
+              <tr key={i} className="border-t border-line">
                 {row.map((cell, j) => (
                   <td key={j} className="px-2 py-1">
                     {cell}

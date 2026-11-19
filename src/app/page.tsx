@@ -41,7 +41,7 @@ export default async function Dashboard() {
       <TopBar
         title={profile?.display_name ? `Hey, ${profile.display_name}` : "Today"}
         right={
-          <Link href="/settings" className="text-sm text-[--color-muted]" aria-label="Settings">
+          <Link href="/settings" className="text-sm text-muted" aria-label="Settings">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
@@ -69,18 +69,18 @@ export default async function Dashboard() {
         <Card
           title="Today's macros"
           action={
-            <Link href="/diet" className="text-sm text-[--color-accent]">
+            <Link href="/diet" className="text-sm text-accent">
               Log food
             </Link>
           }
         >
           {entries.length === 0 ? (
             <Empty title="Nothing logged yet today">
-              <Link href="/import" className="text-[--color-accent]">
+              <Link href="/import" className="text-accent">
                 Paste your notes
               </Link>{" "}
               or{" "}
-              <Link href="/diet" className="text-[--color-accent]">
+              <Link href="/diet" className="text-accent">
                 add a meal
               </Link>
               .
@@ -112,7 +112,7 @@ export default async function Dashboard() {
                 color={SERIES.s4}
               />
               {targets.target?.protein_mode === "bodyweight" && targets.bodyweightLbs && (
-                <p className="text-xs text-[--color-muted]">
+                <p className="text-xs text-muted">
                   Protein target is {targets.target.protein_multiplier}× your bodyweight
                   ({Math.round(targets.bodyweightLbs)} lb).
                 </p>
@@ -124,14 +124,14 @@ export default async function Dashboard() {
         <Card
           title="Recent training"
           action={
-            <Link href="/lifts" className="text-sm text-[--color-accent]">
+            <Link href="/lifts" className="text-sm text-accent">
               All workouts
             </Link>
           }
         >
           {!lastWorkout ? (
             <Empty title="No workouts logged">
-              <Link href="/lifts" className="text-[--color-accent]">
+              <Link href="/lifts" className="text-accent">
                 Log your first session
               </Link>
               .
@@ -142,13 +142,13 @@ export default async function Dashboard() {
                 <li key={w.id}>
                   <Link
                     href={`/lifts/${w.id}`}
-                    className="flex items-center justify-between rounded-xl border border-[--color-line] bg-[--color-surface-2] px-3 py-2.5"
+                    className="flex items-center justify-between rounded-xl border border-line bg-surface-2 px-3 py-2.5"
                   >
                     <span>
                       <span className="block text-sm font-medium">
                         {w.title ?? formatDate(w.date)}
                       </span>
-                      <span className="text-xs text-[--color-muted]">
+                      <span className="text-xs text-muted">
                         {w.workout_exercises?.length ?? 0} exercises ·{" "}
                         {(w.workout_exercises ?? []).reduce(
                           (n, b) => n + (b.workout_sets?.length ?? 0),
@@ -168,17 +168,17 @@ export default async function Dashboard() {
         <div className="grid grid-cols-2 gap-3">
           <Link
             href="/import"
-            className="flex min-h-20 flex-col justify-center rounded-2xl border border-[--color-line] bg-[--color-surface] px-4"
+            className="flex min-h-20 flex-col justify-center rounded-2xl border border-line bg-surface px-4"
           >
             <span className="text-sm font-medium">Import from notes</span>
-            <span className="text-xs text-[--color-muted]">Paste anything. Photo of a meal works too.</span>
+            <span className="text-xs text-muted">Paste anything. Photo of a meal works too.</span>
           </Link>
           <Link
             href="/insights"
-            className="flex min-h-20 flex-col justify-center rounded-2xl border border-[--color-line] bg-[--color-surface] px-4"
+            className="flex min-h-20 flex-col justify-center rounded-2xl border border-line bg-surface px-4"
           >
             <span className="text-sm font-medium">Get insights</span>
-            <span className="text-xs text-[--color-muted]">Are the numbers going up?</span>
+            <span className="text-xs text-muted">Are the numbers going up?</span>
           </Link>
         </div>
       </div>

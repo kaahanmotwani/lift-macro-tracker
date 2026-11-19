@@ -20,14 +20,14 @@ export default async function RecipesPage() {
       <TopBar
         title="Recipes"
         right={
-          <Link href="/diet" className="text-sm text-[--color-muted]">
+          <Link href="/diet" className="text-sm text-muted">
             Back
           </Link>
         }
       />
 
       <div className="space-y-4">
-        <p className="text-sm text-[--color-muted]">
+        <p className="text-sm text-muted">
           A recipe is a mix you eat often — overnight oats, your usual shake. Log it in one tap
           and scale it by servings instead of re-entering every ingredient.
         </p>
@@ -63,7 +63,7 @@ export default async function RecipesPage() {
                   </form>
                 }
               >
-                <p className="tabular mb-3 text-xs text-[--color-muted]">
+                <p className="tabular mb-3 text-xs text-muted">
                   Makes {r.servings} serving{r.servings === 1 ? "" : "s"} · per serving:{" "}
                   {perServing(totals.kcal)} kcal · P{perServing(totals.protein_g)} · C
                   {perServing(totals.carbs_g)} · F{perServing(totals.fat_g)} · Fib
@@ -71,12 +71,12 @@ export default async function RecipesPage() {
                 </p>
 
                 {r.recipe_items?.length ? (
-                  <ul className="mb-3 divide-y divide-[--color-line] text-sm">
+                  <ul className="mb-3 divide-y divide-line text-sm">
                     {r.recipe_items.map((item) => (
                       <li key={item.id} className="flex items-center justify-between py-2">
                         <span className="min-w-0">
                           <span className="block truncate">{item.name}</span>
-                          <span className="tabular text-xs text-[--color-muted]">
+                          <span className="tabular text-xs text-muted">
                             {item.qty ? `${item.qty}${item.unit ? ` ${item.unit}` : ""} · ` : ""}
                             {Math.round(item.kcal ?? 0)} kcal · P{item.protein_g ?? 0} · C
                             {item.carbs_g ?? 0} · F{item.fat_g ?? 0}
@@ -90,7 +90,7 @@ export default async function RecipesPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mb-3 text-sm text-[--color-muted]">No ingredients yet.</p>
+                  <p className="mb-3 text-sm text-muted">No ingredients yet.</p>
                 )}
 
                 <Disclosure label="+ Add ingredient">

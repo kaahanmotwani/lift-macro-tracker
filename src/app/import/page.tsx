@@ -50,7 +50,7 @@ export default async function ImportPage() {
         )}
 
         <Card title="Paste your notes">
-          <p className="mb-3 text-sm text-[--color-muted]">
+          <p className="mb-3 text-sm text-muted">
             Copy anything out of your Notes app — shorthand, typos, mixed lifts and food and
             weigh-ins in one blob. Nothing is written until you review it on the next screen.
           </p>
@@ -76,7 +76,7 @@ export default async function ImportPage() {
                 accept="image/*"
                 capture="environment"
                 required
-                className="w-full rounded-xl border border-[--color-line] bg-[--color-surface-2] px-3 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[--color-accent] file:px-3 file:py-1.5 file:text-black"
+                className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-black"
               />
             </Field>
             <div className="grid grid-cols-2 gap-2">
@@ -95,7 +95,7 @@ export default async function ImportPage() {
           {!recent?.length ? (
             <Empty title="Nothing imported yet" />
           ) : (
-            <ul className="divide-y divide-[--color-line]">
+            <ul className="divide-y divide-line">
               {recent.map((r) => (
                 <li key={r.id} className="py-2.5">
                   <Link href={`/import/${r.id}`} className="flex items-start justify-between gap-2">
@@ -103,7 +103,7 @@ export default async function ImportPage() {
                       <span className="block truncate text-sm">
                         {r.raw_text?.split("\n")[0] ?? "Photo import"}
                       </span>
-                      <span className="text-xs text-[--color-muted]">
+                      <span className="text-xs text-muted">
                         {formatDate(String(r.created_at).slice(0, 10))} · {r.kind}
                       </span>
                     </span>
@@ -121,7 +121,7 @@ export default async function ImportPage() {
           )}
         </Card>
 
-        <p className="text-xs leading-relaxed text-[--color-muted]">
+        <p className="text-xs leading-relaxed text-muted">
           Claude never fills in a number your notes didn&rsquo;t support — an unstated weight
           stays blank rather than being guessed. Everything it does extract is shown for review
           before it touches your log, and the original text is kept so a bad parse can be redone.

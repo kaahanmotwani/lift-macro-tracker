@@ -15,14 +15,14 @@ export default async function FoodsPage() {
       <TopBar
         title="Saved foods"
         right={
-          <Link href="/diet" className="text-sm text-[--color-muted]">
+          <Link href="/diet" className="text-sm text-muted">
             Back
           </Link>
         }
       />
 
       <div className="space-y-4">
-        <p className="text-sm text-[--color-muted]">
+        <p className="text-sm text-muted">
           Save the brands you actually buy. Mark one as the default for a food, and when you
           (or an import) just say &ldquo;greek yogurt&rdquo;, those macros get used instead of an
           estimate — still editable per entry when you bought a different brand.
@@ -37,14 +37,14 @@ export default async function FoodsPage() {
         ) : (
           <ul className="space-y-2">
             {foods.map((f) => (
-              <li key={f.id} className="rounded-2xl border border-[--color-line] bg-[--color-surface] p-4">
+              <li key={f.id} className="rounded-2xl border border-line bg-surface p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">
                       {f.name}
-                      {f.brand && <span className="text-[--color-muted]"> — {f.brand}</span>}
+                      {f.brand && <span className="text-muted"> — {f.brand}</span>}
                     </p>
-                    <p className="tabular text-xs text-[--color-muted]">
+                    <p className="tabular text-xs text-muted">
                       per {f.serving_qty} {f.serving_unit} · {Math.round(f.kcal ?? 0)} kcal · P
                       {f.protein_g ?? 0} · C{f.carbs_g ?? 0} · F{f.fat_g ?? 0} · Fib{f.fiber_g ?? 0}
                     </p>
@@ -108,12 +108,12 @@ function FoodForm({ food }: { food?: Awaited<ReturnType<typeof listFoodItems>>[n
           <Input name="fiber_g" type="number" step="0.1" defaultValue={food?.fiber_g ?? ""} />
         </Field>
       </div>
-      <label className="flex items-center gap-2 text-sm text-[--color-muted]">
+      <label className="flex items-center gap-2 text-sm text-muted">
         <input
           type="checkbox"
           name="is_default"
           defaultChecked={food?.is_default}
-          className="h-4 w-4 accent-[--color-accent]"
+          className="h-4 w-4 accent-accent"
         />
         Use this brand by default for this food
       </label>

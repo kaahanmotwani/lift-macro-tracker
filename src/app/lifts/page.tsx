@@ -16,7 +16,7 @@ export default async function LiftsPage() {
       <TopBar
         title="Lifts"
         right={
-          <Link href="/exercises" className="text-sm text-[--color-accent]">
+          <Link href="/exercises" className="text-sm text-accent">
             Exercises
           </Link>
         }
@@ -40,7 +40,7 @@ export default async function LiftsPage() {
         {workouts.length === 0 ? (
           <Empty title="No workouts yet">
             Start a session above, or{" "}
-            <Link href="/import" className="text-[--color-accent]">
+            <Link href="/import" className="text-accent">
               import your existing notes
             </Link>
             .
@@ -56,19 +56,19 @@ export default async function LiftsPage() {
                 <li key={w.id}>
                   <Link
                     href={`/lifts/${w.id}`}
-                    className="block rounded-2xl border border-[--color-line] bg-[--color-surface] px-4 py-3"
+                    className="block rounded-2xl border border-line bg-surface px-4 py-3"
                   >
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-medium">{w.title ?? "Session"}</span>
-                      <span className="text-xs text-[--color-muted]">{formatDate(w.date)}</span>
+                      <span className="text-xs text-muted">{formatDate(w.date)}</span>
                     </div>
-                    <p className="mt-1 truncate text-xs text-[--color-muted]">
+                    <p className="mt-1 truncate text-xs text-muted">
                       {(w.workout_exercises ?? [])
                         .map((b) => b.exercises?.name)
                         .filter(Boolean)
                         .join(" · ") || "No exercises yet"}
                     </p>
-                    <p className="mt-1 text-xs text-[--color-muted]">
+                    <p className="mt-1 text-xs text-muted">
                       {w.workout_exercises?.length ?? 0} exercises · {sets} sets
                       {w.gym ? ` · ${w.gym}` : ""}
                     </p>

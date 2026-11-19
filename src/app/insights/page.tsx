@@ -47,7 +47,7 @@ export default async function InsightsPage({
           unit="sets"
         />
         {muscleItems.length > 0 && (
-          <p className="-mt-2 text-xs text-[--color-muted]">
+          <p className="-mt-2 text-xs text-muted">
             Secondary movers count as half a set — they get worked, but they aren&rsquo;t what the
             lift is for.
           </p>
@@ -61,7 +61,7 @@ export default async function InsightsPage({
                 <Link
                   key={d}
                   href={`/insights?days=${d}`}
-                  className={d === days ? "text-[--color-accent]" : "text-[--color-muted]"}
+                  className={d === days ? "text-accent" : "text-muted"}
                 >
                   {d}d
                 </Link>
@@ -70,16 +70,16 @@ export default async function InsightsPage({
           }
         >
           {!hasKey ? (
-            <p className="text-sm text-[--color-muted]">
+            <p className="text-sm text-muted">
               Add your Anthropic API key in{" "}
-              <Link href="/settings" className="text-[--color-accent]">
+              <Link href="/settings" className="text-accent">
                 Settings
               </Link>{" "}
               to generate insights. They&rsquo;re billed to your own account.
             </p>
           ) : (
             <>
-              <p className="mb-3 text-sm text-[--color-muted]">
+              <p className="mb-3 text-sm text-muted">
                 Claude reads your actual numbers — every logged set, every fully-tracked day of
                 food — and tells you whether the lines are going up. Partially-logged days are
                 handed over labelled and excluded from averages.
@@ -99,7 +99,7 @@ export default async function InsightsPage({
             title={`Latest analysis — ${formatDate(String(latest.created_at).slice(0, 10))}`}
           >
             <Markdown text={latest.body_md} />
-            <p className="mt-4 border-t border-[--color-line] pt-3 text-xs text-[--color-muted]">
+            <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
               Generated from {latest.period_start} to {latest.period_end}. This is pattern
               description, not medical or nutritional advice.
             </p>
@@ -116,10 +116,10 @@ export default async function InsightsPage({
               {past.slice(1).map((p) => (
                 <li key={p.id}>
                   <details>
-                    <summary className="cursor-pointer text-sm text-[--color-muted]">
+                    <summary className="cursor-pointer text-sm text-muted">
                       {formatDate(String(p.created_at).slice(0, 10))} · {p.kind}
                     </summary>
-                    <div className="mt-2 border-l-2 border-[--color-line] pl-3">
+                    <div className="mt-2 border-l-2 border-line pl-3">
                       <Markdown text={p.body_md} />
                     </div>
                   </details>

@@ -38,7 +38,7 @@ export default async function ReviewImportPage({
       <TopBar
         title="Review import"
         right={
-          <Link href="/import" className="text-sm text-[--color-muted]">
+          <Link href="/import" className="text-sm text-muted">
             Back
           </Link>
         }
@@ -80,20 +80,20 @@ export default async function ReviewImportPage({
                       name="keep_workout"
                       value={wi}
                       defaultChecked
-                      className="h-4 w-4 accent-[--color-accent]"
+                      className="h-4 w-4 accent-accent"
                     />
                     {workout.title ?? "Workout"} ·{" "}
                     {workout.date ? formatDate(workout.date) : "no date — will use today"}
                   </label>
                 }
               >
-                {workout.gym && <p className="mb-2 text-xs text-[--color-muted]">{workout.gym}</p>}
+                {workout.gym && <p className="mb-2 text-xs text-muted">{workout.gym}</p>}
                 <ol className="space-y-3">
                   {workout.exercises.map((ex, ei) => (
                     <li key={ei}>
                       <p className="text-sm font-medium">
                         {ei + 1}. {ex.name}
-                        <span className="ml-2 text-xs font-normal text-[--color-muted]">
+                        <span className="ml-2 text-xs font-normal text-muted">
                           {[ex.grip, ex.angle, ex.equipment, ex.variant].filter(Boolean).join(" · ")}
                         </span>
                       </p>
@@ -106,13 +106,13 @@ export default async function ReviewImportPage({
                       ) : null}
                       <ul className="mt-1 space-y-0.5 text-xs">
                         {ex.sets.map((set, si) => (
-                          <li key={si} className="tabular text-[--color-muted]">
+                          <li key={si} className="tabular text-muted">
                             Set {si + 1}:{" "}
                             {set.segments
                               .map((s) => `${s.reps ?? "?"} × ${w(s.weight_lbs)}`)
                               .join("  +  ")}
                             {set.segments.length > 1 && (
-                              <span className="ml-2 text-[--color-accent]">superset</span>
+                              <span className="ml-2 text-accent">superset</span>
                             )}
                             {set.is_warmup && <span className="ml-2">warmup</span>}
                             {set.rpe && <span className="ml-2">RPE {set.rpe}</span>}
@@ -149,7 +149,7 @@ export default async function ReviewImportPage({
                       name="keep_diet_day"
                       value={di}
                       defaultChecked
-                      className="h-4 w-4 accent-[--color-accent]"
+                      className="h-4 w-4 accent-accent"
                     />
                     Food · {day.date ? formatDate(day.date) : "no date — will use today"}
                   </label>
@@ -163,22 +163,22 @@ export default async function ReviewImportPage({
                 {day.completeness_note && (
                   <p className="mb-2 text-xs text-amber-300">{day.completeness_note}</p>
                 )}
-                <ul className="divide-y divide-[--color-line] text-sm">
+                <ul className="divide-y divide-line text-sm">
                   {day.entries.map((e, ei) => (
                     <li key={ei} className="py-2">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="truncate">
                           {e.name}
-                          {e.brand && <span className="text-[--color-muted]"> — {e.brand}</span>}
+                          {e.brand && <span className="text-muted"> — {e.brand}</span>}
                         </span>
                         {e.confidence !== "high" && <Badge tone="warn">{e.confidence}</Badge>}
                       </div>
-                      <p className="tabular text-xs text-[--color-muted]">
+                      <p className="tabular text-xs text-muted">
                         {e.qty ? `${e.qty}${e.unit ? ` ${e.unit}` : ""} · ` : ""}
                         {e.kcal ?? "?"} kcal · P{e.protein_g ?? "?"} · C{e.carbs_g ?? "?"} · F
                         {e.fat_g ?? "?"} · Fib{e.fiber_g ?? "?"}
                       </p>
-                      {e.note && <p className="text-xs text-[--color-muted] italic">{e.note}</p>}
+                      {e.note && <p className="text-xs text-muted italic">{e.note}</p>}
                     </li>
                   ))}
                 </ul>
@@ -197,12 +197,12 @@ export default async function ReviewImportPage({
                           name="keep_weight"
                           value={bi}
                           defaultChecked
-                          className="h-4 w-4 accent-[--color-accent]"
+                          className="h-4 w-4 accent-accent"
                         />
                         <span className="tabular">
                           {b.weight} {b.unit}
                         </span>
-                        <span className="text-xs text-[--color-muted]">
+                        <span className="text-xs text-muted">
                           {b.date ? formatDate(b.date) : "today"}
                           {b.time ? ` · ${b.time}` : ""}
                           {b.note ? ` · ${b.note}` : ""}
@@ -216,12 +216,12 @@ export default async function ReviewImportPage({
 
             {parsed.unparsed.length > 0 && (
               <Card title="Couldn't map these lines">
-                <ul className="list-disc space-y-1 pl-5 text-sm text-[--color-muted]">
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
                   {parsed.unparsed.map((line, i) => (
                     <li key={i}>{line}</li>
                   ))}
                 </ul>
-                <p className="mt-2 text-xs text-[--color-muted]">
+                <p className="mt-2 text-xs text-muted">
                   Nothing is dropped silently — add these by hand if they matter.
                 </p>
               </Card>
@@ -235,7 +235,7 @@ export default async function ReviewImportPage({
                 </Empty>
               )}
 
-            <div className="sticky bottom-20 rounded-2xl border border-[--color-line] bg-[--color-surface] p-3">
+            <div className="sticky bottom-20 rounded-2xl border border-line bg-surface p-3">
               <SubmitButton pendingLabel="Writing to your log…" className="w-full">
                 Import the checked items
               </SubmitButton>
@@ -245,7 +245,7 @@ export default async function ReviewImportPage({
 
         {record.raw_text && (
           <Card title="Original text">
-            <pre className="overflow-auto whitespace-pre-wrap font-mono text-xs text-[--color-muted]">
+            <pre className="overflow-auto whitespace-pre-wrap font-mono text-xs text-muted">
               {record.raw_text}
             </pre>
           </Card>

@@ -6,9 +6,8 @@
   --color-surface-2: #1c1f24;
   --color-line: #292d34;
   --color-muted: #8b929e;
-  --color-text: #eceef1;
+  --color-fg: #eceef1;
   --color-accent: #f97316;
-  --color-accent-soft: #7c3a12;
   --color-protein: #f97316;
   --color-carbs: #38bdf8;
   --color-fat: #facc15;
@@ -22,7 +21,7 @@
 html,
 body {
   background: var(--color-ink);
-  color: var(--color-text);
+  color: var(--color-fg);
   -webkit-font-smoothing: antialiased;
 }
 

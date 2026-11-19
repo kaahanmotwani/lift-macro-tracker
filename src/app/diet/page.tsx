@@ -53,10 +53,10 @@ export default async function DietPage({
         title="Diet"
         right={
           <span className="flex gap-3 text-sm">
-            <Link href="/diet/foods" className="text-[--color-accent]">
+            <Link href="/diet/foods" className="text-accent">
               Foods
             </Link>
-            <Link href="/diet/recipes" className="text-[--color-accent]">
+            <Link href="/diet/recipes" className="text-accent">
               Recipes
             </Link>
           </span>
@@ -68,23 +68,26 @@ export default async function DietPage({
         <div className="flex items-center gap-2">
           <Link
             href={`/diet?date=${addDays(date, -1)}&range=${range}`}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[--color-line]"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-line"
             aria-label="Previous day"
           >
             ‹
           </Link>
-          <form className="flex-1">
+          {/* A plain GET form: picking a date and submitting navigates. Works
+              without JavaScript, which is the point. */}
+          <form className="flex flex-1 gap-2">
             <input type="hidden" name="range" value={range} />
             <Input type="date" name="date" defaultValue={date} className="text-center" />
-            <noscript>
-              <button type="submit" className="mt-1 w-full text-xs text-[--color-accent]">
-                Go
-              </button>
-            </noscript>
+            <button
+              type="submit"
+              className="min-h-11 shrink-0 rounded-xl border border-line px-3 text-sm text-accent"
+            >
+              Go
+            </button>
           </form>
           <Link
             href={`/diet?date=${addDays(date, 1)}&range=${range}`}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[--color-line]"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-line"
             aria-label="Next day"
           >
             ›
@@ -106,9 +109,9 @@ export default async function DietPage({
             <TargetBar label="Fat" value={totals.fat_g} target={targets.target?.fat_g ?? null} color={SERIES.s3} />
             <TargetBar label="Fiber" value={totals.fiber_g} target={targets.target?.fiber_g ?? null} color={SERIES.s4} />
           </div>
-          <p className="mt-3 text-xs text-[--color-muted]">
+          <p className="mt-3 text-xs text-muted">
             Set targets in{" "}
-            <Link href="/settings" className="text-[--color-accent]">
+            <Link href="/settings" className="text-accent">
               Settings
             </Link>
             .
@@ -123,19 +126,19 @@ export default async function DietPage({
           {entries.length === 0 ? (
             <Empty title="Nothing logged for this day">
               Add something below, or{" "}
-              <Link href="/import" className="text-[--color-accent]">
+              <Link href="/import" className="text-accent">
                 import from a photo or notes
               </Link>
               .
             </Empty>
           ) : (
-            <ul className="divide-y divide-[--color-line]">
+            <ul className="divide-y divide-line">
               {entries.map((e) => (
                 <li key={e.id} className="py-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{e.name}</p>
-                      <p className="tabular text-xs text-[--color-muted]">
+                      <p className="tabular text-xs text-muted">
                         {e.qty ? `${e.qty}${e.unit ? ` ${e.unit}` : ""} · ` : ""}
                         {Math.round(e.kcal ?? 0)} kcal · P{Math.round(e.protein_g ?? 0)} · C
                         {Math.round(e.carbs_g ?? 0)} · F{Math.round(e.fat_g ?? 0)} · Fib
@@ -148,7 +151,7 @@ export default async function DietPage({
                         )}
                         {e.source !== "manual" && <Badge>{e.source.replace("_", " ")}</Badge>}
                       </div>
-                      {e.notes && <p className="mt-1 text-xs text-[--color-muted]">{e.notes}</p>}
+                      {e.notes && <p className="mt-1 text-xs text-muted">{e.notes}</p>}
                     </div>
                     <form action={deleteDietEntry}>
                       <input type="hidden" name="id" value={e.id} />
@@ -266,7 +269,7 @@ export default async function DietPage({
           {day?.ai_micro_summary ? (
             <p className="text-sm leading-relaxed">{day.ai_micro_summary}</p>
           ) : (
-            <p className="text-sm text-[--color-muted]">
+            <p className="text-sm text-muted">
               You never log these by hand — Claude estimates them from what you ate.
             </p>
           )}
@@ -281,7 +284,7 @@ export default async function DietPage({
         {/* Trends */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[--color-muted]">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
               Trends
             </h2>
             <span className="flex gap-2 text-xs">
@@ -289,7 +292,7 @@ export default async function DietPage({
                 <Link
                   key={r}
                   href={`/diet?date=${date}&range=${r}`}
-                  className={r === range ? "text-[--color-accent]" : "text-[--color-muted]"}
+                  className={r === range ? "text-accent" : "text-muted"}
                 >
                   {r}d
                 </Link>
@@ -319,7 +322,7 @@ export default async function DietPage({
             }))}
           />
 
-          <p className="text-xs text-[--color-muted]">
+          <p className="text-xs text-muted">
             Hollow markers and faded bars are partially-logged days; a tick on the baseline
             means the day wasn&rsquo;t tracked at all. Neither is counted as a low-intake day.
           </p>
@@ -375,7 +378,7 @@ function EntryForm({
           <Input name="fiber_g" type="number" inputMode="decimal" defaultValue={entry?.fiber_g ?? ""} />
         </Field>
       </div>
-      <p className="text-xs text-[--color-muted]">
+      <p className="text-xs text-muted">
         Leave calories blank and they&rsquo;ll be computed from the macros.
       </p>
       <Field label="Note">

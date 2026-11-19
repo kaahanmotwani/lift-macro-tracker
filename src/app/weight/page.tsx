@@ -105,7 +105,7 @@ export default async function WeightPage() {
           {logs.length === 0 ? (
             <Empty title="No weigh-ins yet">Log one above to start the trend.</Empty>
           ) : (
-            <ul className="divide-y divide-[--color-line]">
+            <ul className="divide-y divide-line">
               {logs.map((l) => (
                 <li key={l.id} className="py-2">
                   <div className="flex items-center justify-between">
@@ -113,7 +113,7 @@ export default async function WeightPage() {
                       <span className="tabular font-medium">
                         {round(fromLbs(l.weight_lbs, unit), 1)} {unit}
                       </span>
-                      <span className="ml-2 text-xs text-[--color-muted]">
+                      <span className="ml-2 text-xs text-muted">
                         {formatDate(l.date)}
                         {l.logged_at
                           ? ` · ${new Date(l.logged_at).toLocaleTimeString(undefined, {
@@ -123,7 +123,7 @@ export default async function WeightPage() {
                           : ""}
                       </span>
                       {l.note && (
-                        <span className="block text-xs text-[--color-muted]">{l.note}</span>
+                        <span className="block text-xs text-muted">{l.note}</span>
                       )}
                     </span>
                     <form action={deleteBodyweight}>

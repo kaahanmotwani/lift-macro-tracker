@@ -18,14 +18,14 @@ export default async function ExercisesPage() {
       <TopBar
         title="Exercises"
         right={
-          <Link href="/lifts" className="text-sm text-[--color-muted]">
+          <Link href="/lifts" className="text-sm text-muted">
             Back
           </Link>
         }
       />
 
       <div className="space-y-4">
-        <p className="text-sm text-[--color-muted]">
+        <p className="text-sm text-muted">
           Similar movements are kept separate on purpose. A wide-grip row and a neutral-grip
           row are different exercises, and the same nominal machine at two gyms rarely feels
           the same — so each gets its own progression.
@@ -42,13 +42,13 @@ export default async function ExercisesPage() {
         ) : (
           <ul className="space-y-2">
             {exercises.map((e) => (
-              <li key={e.id} className="rounded-2xl border border-[--color-line] bg-[--color-surface] p-4">
+              <li key={e.id} className="rounded-2xl border border-line bg-surface p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <Link href={`/exercises/${e.id}`} className="font-medium hover:text-[--color-accent]">
+                    <Link href={`/exercises/${e.id}`} className="font-medium hover:text-accent">
                       {e.name}
                     </Link>
-                    <p className="truncate text-xs text-[--color-muted]">
+                    <p className="truncate text-xs text-muted">
                       {[e.grip, e.angle, e.equipment, e.variant, e.gym].filter(Boolean).join(" · ") ||
                         "no details recorded"}
                     </p>
@@ -151,12 +151,12 @@ function ExerciseForm({
           placeholder="0"
         />
       </Field>
-      <label className="flex items-center gap-2 text-sm text-[--color-muted]">
+      <label className="flex items-center gap-2 text-sm text-muted">
         <input
           type="checkbox"
           name="unilateral"
           defaultChecked={exercise?.unilateral}
-          className="h-4 w-4 accent-[--color-accent]"
+          className="h-4 w-4 accent-accent"
         />
         One side at a time
       </label>

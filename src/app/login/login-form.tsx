@@ -46,16 +46,16 @@ export function LoginForm() {
 
   if (status === "sent") {
     return (
-      <div className="rounded-2xl border border-[--color-line] bg-[--color-surface] p-4">
+      <div className="rounded-2xl border border-line bg-surface p-4">
         <p className="font-medium">Check your email</p>
-        <p className="mt-1 text-sm text-[--color-muted]">
-          We sent a sign-in link to <span className="text-[--color-text]">{email}</span>. Open it
+        <p className="mt-1 text-sm text-muted">
+          We sent a sign-in link to <span className="text-fg">{email}</span>. Open it
           on this device.
         </p>
         <button
           type="button"
           onClick={() => setStatus("idle")}
-          className="mt-3 text-sm text-[--color-accent]"
+          className="mt-3 text-sm text-accent"
         >
           Use a different email
         </button>
@@ -84,10 +84,10 @@ export function LoginForm() {
         Continue with Google
       </Button>
 
-      <div className="flex items-center gap-3 text-xs text-[--color-muted]">
-        <span className="h-px flex-1 bg-[--color-line]" />
+      <div className="flex items-center gap-3 text-xs text-muted">
+        <span className="h-px flex-1 bg-line" />
         or
-        <span className="h-px flex-1 bg-[--color-line]" />
+        <span className="h-px flex-1 bg-line" />
       </div>
 
       <form onSubmit={sendLink} className="space-y-2">

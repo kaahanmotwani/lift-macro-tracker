@@ -19,12 +19,12 @@ export function Card({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-[--color-line] bg-[--color-surface] p-4 ${className}`}
+      className={`rounded-2xl border border-line bg-surface p-4 ${className}`}
     >
       {(title || action) && (
         <header className="mb-3 flex items-center justify-between gap-3">
           {typeof title === "string" ? (
-            <h2 className="text-sm font-semibold tracking-wide text-[--color-muted] uppercase">
+            <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">
               {title}
             </h2>
           ) : (
@@ -44,9 +44,9 @@ export function Button({
   ...props
 }: ComponentProps<"button"> & { variant?: "primary" | "secondary" | "ghost" | "danger" }) {
   const styles = {
-    primary: "bg-[--color-accent] text-black font-semibold hover:brightness-110",
-    secondary: "bg-[--color-surface-2] text-[--color-text] border border-[--color-line] hover:bg-[--color-line]",
-    ghost: "text-[--color-muted] hover:text-[--color-text]",
+    primary: "bg-accent text-black font-semibold hover:brightness-110",
+    secondary: "bg-surface-2 text-fg border border-line hover:bg-line",
+    ghost: "text-muted hover:text-fg",
     danger: "bg-transparent text-red-400 border border-red-900/60 hover:bg-red-950/40",
   }[variant];
 
@@ -71,15 +71,15 @@ export function Field({
 }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-1 block text-xs font-medium text-[--color-muted]">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-muted">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-[--color-muted]">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
   );
 }
 
 const inputBase =
-  "w-full min-h-11 rounded-xl border border-[--color-line] bg-[--color-surface-2] px-3 text-[--color-text] placeholder:text-[--color-muted]/60 outline-none focus:border-[--color-accent]";
+  "w-full min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-fg placeholder:text-muted/60 outline-none focus:border-accent";
 
 export function Input({ className = "", ...props }: ComponentProps<"input">) {
   return <input {...props} className={`${inputBase} ${className}`} />;
@@ -105,26 +105,26 @@ export function Stat({
   tone?: "default" | "accent" | "muted";
 }) {
   const valueTone = {
-    default: "text-[--color-text]",
-    accent: "text-[--color-accent]",
-    muted: "text-[--color-muted]",
+    default: "text-fg",
+    accent: "text-accent",
+    muted: "text-muted",
   }[tone];
   return (
-    <div className="rounded-xl border border-[--color-line] bg-[--color-surface-2] px-3 py-2.5">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-[--color-muted]">
+    <div className="rounded-xl border border-line bg-surface-2 px-3 py-2.5">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-muted">
         {label}
       </div>
       <div className={`tabular text-xl font-semibold ${valueTone}`}>{value}</div>
-      {sub && <div className="text-xs text-[--color-muted]">{sub}</div>}
+      {sub && <div className="text-xs text-muted">{sub}</div>}
     </div>
   );
 }
 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[--color-line] px-4 py-10 text-center">
-      <p className="font-medium text-[--color-text]">{title}</p>
-      {children && <div className="mt-2 text-sm text-[--color-muted]">{children}</div>}
+    <div className="rounded-2xl border border-dashed border-line px-4 py-10 text-center">
+      <p className="font-medium text-fg">{title}</p>
+      {children && <div className="mt-2 text-sm text-muted">{children}</div>}
     </div>
   );
 }
@@ -137,10 +137,10 @@ export function Badge({
   tone?: "default" | "warn" | "good" | "muted";
 }) {
   const styles = {
-    default: "bg-[--color-surface-2] text-[--color-muted] border-[--color-line]",
+    default: "bg-surface-2 text-muted border-line",
     warn: "bg-amber-950/50 text-amber-300 border-amber-900/60",
     good: "bg-emerald-950/50 text-emerald-300 border-emerald-900/60",
-    muted: "bg-transparent text-[--color-muted] border-[--color-line]",
+    muted: "bg-transparent text-muted border-line",
   }[tone];
   return (
     <span className={`inline-block rounded-md border px-1.5 py-0.5 text-[11px] ${styles}`}>
@@ -167,14 +167,14 @@ export function TargetBar({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-xs">
-        <span className="text-[--color-muted]">{label}</span>
-        <span className="tabular text-[--color-text]">
+        <span className="text-muted">{label}</span>
+        <span className="tabular text-fg">
           {Math.round(value)}
-          {target ? <span className="text-[--color-muted]"> / {Math.round(target)}</span> : null}
-          <span className="text-[--color-muted]"> {unit}</span>
+          {target ? <span className="text-muted"> / {Math.round(target)}</span> : null}
+          <span className="text-muted"> {unit}</span>
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[--color-surface-2]">
+      <div className="h-2 overflow-hidden rounded-full bg-surface-2">
         <div
           className="h-full rounded-full transition-[width]"
           style={{ width: `${pct}%`, background: color }}
@@ -193,7 +193,7 @@ export function Markdown({ text }: { text: string }) {
   const flush = (key: string) => {
     if (!bullets.length) return;
     out.push(
-      <ul key={key} className="my-2 list-disc space-y-1 pl-5 text-sm text-[--color-text]">
+      <ul key={key} className="my-2 list-disc space-y-1 pl-5 text-sm text-fg">
         {bullets.map((b, i) => (
           <li key={i}>{inline(b)}</li>
         ))}
@@ -216,7 +216,7 @@ export function Markdown({ text }: { text: string }) {
       out.push(
         <h3
           key={i}
-          className={`mt-4 mb-1 font-semibold ${level <= 2 ? "text-base" : "text-sm"} text-[--color-text]`}
+          className={`mt-4 mb-1 font-semibold ${level <= 2 ? "text-base" : "text-sm"} text-fg`}
         >
           {inline(heading[2])}
         </h3>,
@@ -224,7 +224,7 @@ export function Markdown({ text }: { text: string }) {
       return;
     }
     out.push(
-      <p key={i} className="my-2 text-sm leading-relaxed text-[--color-text]">
+      <p key={i} className="my-2 text-sm leading-relaxed text-fg">
         {inline(trimmed)}
       </p>,
     );
@@ -246,7 +246,7 @@ function inline(text: string): ReactNode[] {
     }
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={i} className="rounded bg-[--color-surface-2] px-1 text-[13px]">
+        <code key={i} className="rounded bg-surface-2 px-1 text-[13px]">
           {part.slice(1, -1)}
         </code>
       );

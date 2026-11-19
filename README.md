@@ -65,7 +65,11 @@ It runs as a web app that installs to your iPhone home screen like a native app.
 
 **AI features use your own Anthropic API key.** You add it in Settings; it's stored encrypted and used only for your requests. This means nobody else pays for or can see your imports, and there's no usage cap imposed by whoever runs the instance. It costs a few cents per import — see [DEPLOY.md](DEPLOY.md#what-it-costs).
 
-**Want your own copy?** You can run your own instance with your own database in about 20 minutes, no coding. See **[DEPLOY.md](DEPLOY.md)**.
+**Want your own copy?** You can run your own instance, with your own database that nobody else can reach, in about 20 minutes and without writing any code. **[DEPLOY.md](DEPLOY.md)** walks through it click by click.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2Flift-macro-tracker&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,APP_ENCRYPTION_KEY&envDescription=Supabase%20project%20credentials%20plus%20a%2032-byte%20base64%20encryption%20key&envLink=https%3A%2F%2Fgithub.com%2FYOUR_USERNAME%2Flift-macro-tracker%2Fblob%2Fmain%2FDEPLOY.md)
+
+> Replace `YOUR_USERNAME` in that button's URL with your GitHub username after you publish, or it will deploy someone else's fork. You still need the Supabase steps in DEPLOY.md — the button only handles the hosting half.
 
 ---
 

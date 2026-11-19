@@ -48,7 +48,7 @@ export function MiniSubmit({
       // useFormStatus only reports on the enclosing form, so a button pointed at
       // another form must not be disabled by it.
       disabled={form ? undefined : pending}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[--color-line] text-[--color-muted] transition hover:text-[--color-text] disabled:opacity-40 ${className}`}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line text-muted transition hover:text-fg disabled:opacity-40 ${className}`}
     >
       {children}
     </button>
@@ -107,17 +107,17 @@ export function Disclosure({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-[--color-line]">
+    <div className="rounded-xl border border-line">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex min-h-11 w-full items-center justify-between px-3 text-sm text-[--color-text]"
+        className="flex min-h-11 w-full items-center justify-between px-3 text-sm text-fg"
       >
         {label}
-        <span className="text-[--color-muted]">{open ? "−" : "+"}</span>
+        <span className="text-muted">{open ? "−" : "+"}</span>
       </button>
-      {open && <div className="border-t border-[--color-line] p-3">{children}</div>}
+      {open && <div className="border-t border-line p-3">{children}</div>}
     </div>
   );
 }

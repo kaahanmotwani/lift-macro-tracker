@@ -18,7 +18,7 @@ export default function Error({
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4">
       <h1 className="text-xl font-semibold">That page didn&rsquo;t load</h1>
-      <p className="text-sm text-[--color-muted]">
+      <p className="text-sm text-muted">
         {error.message || "An unexpected error occurred."}
       </p>
       <div className="flex gap-2">
@@ -30,9 +30,9 @@ export default function Error({
         </Link>
       </div>
       {error.digest && (
-        <p className="text-xs text-[--color-muted]">Reference: {error.digest}</p>
+        <p className="text-xs text-muted">Reference: {error.digest}</p>
       )}
-      <p className="text-xs leading-relaxed text-[--color-muted]">
+      <p className="text-xs leading-relaxed text-muted">
         If this keeps happening right after setup, the usual causes are a missing environment
         variable or the database schema not having been run — see DEPLOY.md.
       </p>
