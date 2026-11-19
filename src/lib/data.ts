@@ -461,3 +461,182 @@ export async function resolveTargets(): Promise<{
   }
   return { target, proteinTarget, bodyweightLbs };
 }
+
+// -----------------------------------------------------------------------------
+// Lift search
+// -----------------------------------------------------------------------------
+
+export type LiftSearchResult = {
+  exercises: (Exercise & { sessions: number; lastDate: string | null })[];
+  workouts: {
+    id: string;
+    date: string;
+    title: string | null;
+    gym: string | null;
+    notes: string | null;
+    exerciseNames: string[];
+  }[];
+  notes: {
+    workoutId: string;
+    date: string;
+    exercise: string | null;
+    setIndex: number | null;
+    text: string;
+  }[];
+};
+
+/**
+ * Searches the lifting log three ways:
+ *  - exercises, by every word in the query against name, grip, angle,
+ *    equipment, variant, gym, muscles and notes ("wide row", "chest", "ltf");
+ *  - sessions, by title, gym or session notes;
+ *  - notes left on an exercise, a set, or one weight within a set
+ *    ("shoulder pain", "no spotter").
+ */
+export async function searchLifts(q: string, limit = 60): Promise<LiftSearchResult> {
+  await requireUser();
+  const supabase = await getSupabase();
+  const query = q.trim();
+  const like = containsPattern(query);
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+  const [
+    allExercises,
+    wTitle,
+    wGym,
+    wNotes,
+    blockNotes,
+    setNotes,
+    segmentNotes,
+  ] = await Promise.all([
+    supabase.from("exercises").select("*").order("name"),
+    ...(["title", "gym", "notes"] as const).map((col) =>
+      supabase
+        .from("workouts")
+        .select("id, date, title, gym, notes, workout_exercises ( position, exercises ( name ) )")
+        .ilike(col, like)
+        .order("date", { ascending: false })
+        .limit(limit),
+    ),
+    supabase
+      .from("workout_exercises")
+      .select("notes, workout_id, exercises ( name ), workouts!inner ( date )")
+      .ilike("notes", like)
+      .limit(limit),
+    supabase
+      .from("workout_sets")
+      .select(
+        "notes, set_index, workout_exercises!inner ( workout_id, exercises ( name ), workouts!inner ( date ) )",
+      )
+      .ilike("notes", like)
+      .limit(limit),
+    supabase
+      .from("set_segments")
+      .select(
+        "notes, workout_sets!inner ( set_index, workout_exercises!inner ( workout_id, exercises ( name ), workouts!inner ( date ) ) )",
+      )
+      .ilike("notes", like)
+      .limit(limit),
+  ]);
+  for (const r of [allExercises, wTitle, wGym, wNotes, blockNotes, setNotes, segmentNotes]) {
+    if (r.error) throw new Error(r.error.message);
+  }
+
+  // Exercises: few enough per person to match in memory, which lets every
+  // word hit a different field.
+  const matched = ((allExercises.data ?? []) as Exercise[])
+    .filter((ex) => {
+      const hay = [
+        ex.name,
+        ex.equipment,
+        ex.grip,
+        ex.angle,
+        ex.variant,
+        ex.gym,
+        ex.notes,
+        ...(ex.primary_muscles ?? []),
+        ...(ex.secondary_muscles ?? []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return words.every((w) => hay.includes(w));
+    })
+    .sort((a, b) => {
+      // Name hits first, then archived last, then alphabetical.
+      const an = a.name.toLowerCase().includes(query.toLowerCase()) ? 0 : 1;
+      const bn = b.name.toLowerCase().includes(query.toLowerCase()) ? 0 : 1;
+      return an - bn || Number(a.archived) - Number(b.archived) || a.name.localeCompare(b.name);
+    })
+    .slice(0, 30);
+
+  const stats = new Map<string, { sessions: number; lastDate: string | null }>();
+  if (matched.length) {
+    const { data, error } = await supabase
+      .from("workout_exercises")
+      .select("exercise_id, workouts!inner ( date )")
+      .in(
+        "exercise_id",
+        matched.map((e) => e.id),
+      );
+    if (error) throw new Error(error.message);
+    for (const row of (data ?? []) as any[]) {
+      const s = stats.get(row.exercise_id) ?? { sessions: 0, lastDate: null };
+      s.sessions++;
+      const d = row.workouts?.date as string | undefined;
+      if (d && (!s.lastDate || d > s.lastDate)) s.lastDate = d;
+      stats.set(row.exercise_id, s);
+    }
+  }
+
+  // Sessions, de-duplicated across the three columns.
+  const workoutsById = new Map<string, LiftSearchResult["workouts"][number]>();
+  for (const r of [wTitle, wGym, wNotes]) {
+    for (const w of (r.data ?? []) as any[]) {
+      workoutsById.set(w.id, {
+        id: w.id,
+        date: w.date,
+        title: w.title,
+        gym: w.gym,
+        notes: w.notes,
+        exerciseNames: ((w.workout_exercises ?? []) as any[])
+          .sort((a, b) => a.position - b.position)
+          .map((b) => b.exercises?.name)
+          .filter(Boolean),
+      });
+    }
+  }
+
+  const notes: LiftSearchResult["notes"] = [
+    ...((blockNotes.data ?? []) as any[]).map((b) => ({
+      workoutId: b.workout_id,
+      date: b.workouts?.date,
+      exercise: b.exercises?.name ?? null,
+      setIndex: null,
+      text: b.notes,
+    })),
+    ...((setNotes.data ?? []) as any[]).map((s) => ({
+      workoutId: s.workout_exercises?.workout_id,
+      date: s.workout_exercises?.workouts?.date,
+      exercise: s.workout_exercises?.exercises?.name ?? null,
+      setIndex: s.set_index,
+      text: s.notes,
+    })),
+    ...((segmentNotes.data ?? []) as any[]).map((g) => ({
+      workoutId: g.workout_sets?.workout_exercises?.workout_id,
+      date: g.workout_sets?.workout_exercises?.workouts?.date,
+      exercise: g.workout_sets?.workout_exercises?.exercises?.name ?? null,
+      setIndex: g.workout_sets?.set_index ?? null,
+      text: g.notes,
+    })),
+  ]
+    .filter((n) => n.workoutId && n.date && n.text)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit);
+
+  return {
+    exercises: matched.map((ex) => ({ ...ex, ...(stats.get(ex.id) ?? { sessions: 0, lastDate: null }) })),
+    workouts: [...workoutsById.values()].sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit),
+    notes,
+  };
+}

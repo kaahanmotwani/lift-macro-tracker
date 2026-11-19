@@ -16,13 +16,34 @@ export default async function LiftsPage() {
       <TopBar
         title="Lifts"
         right={
-          <Link href="/exercises" className="text-sm text-accent">
-            Exercises
-          </Link>
+          <span className="flex gap-3 text-sm">
+            <Link href="/lifts/search" className="text-accent">
+              Search
+            </Link>
+            <Link href="/exercises" className="text-accent">
+              Exercises
+            </Link>
+          </span>
         }
       />
 
       <div className="space-y-4">
+        {/* Plain GET form to the search page. */}
+        <form action="/lifts/search" className="flex gap-2" role="search">
+          <Input
+            name="q"
+            type="search"
+            placeholder="Search exercises, sessions, notes"
+            aria-label="Search exercises, sessions and notes"
+          />
+          <button
+            type="submit"
+            className="min-h-11 shrink-0 rounded-xl border border-line px-3 text-sm text-accent"
+          >
+            Search
+          </button>
+        </form>
+
         <Card title="New session">
           <form action={createWorkout} className="flex gap-2">
             <Field label="Date" className="flex-1">

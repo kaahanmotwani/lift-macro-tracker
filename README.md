@@ -28,6 +28,7 @@ It runs as a web app that installs to your iPhone home screen like a native app.
 - **Starting resistance** is supported per exercise. If a stack starts at 20 lb, charts add it, so a machine lift is comparable to a free-weight one.
 - Each exercise gets a progression view: estimated 1RM over time, volume per session, and the full session log.
 - While logging, you see **what you did last time** for that exercise.
+- **Search** across exercises (by name, grip, angle, machine, gym or muscle), sessions, and every note you've left — find every time you wrote "shoulder pain", or every exercise at one gym.
 
 ### Diet & macros
 
