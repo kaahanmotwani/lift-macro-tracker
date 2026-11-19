@@ -9,7 +9,7 @@ import {
   ImportResultSchema,
   PhotoEstimateSchema,
   type ImportResult,
-  type ParsedDietEntry,
+  type LinkedDietEntry,
   type ParsedWorkout,
 } from "@/lib/ai/schemas";
 import {
@@ -19,8 +19,9 @@ import {
   photoUserPrompt,
 } from "@/lib/ai/prompts";
 import { splitIntoChunks } from "@/lib/import-chunks";
+import { linkToPantry, loadPantry, pantryPrompt, rememberFood } from "@/lib/pantry";
 import { kcalFromMacros, matchKey, todayISO } from "@/lib/units";
-import type { ActionResult, FoodItem } from "@/lib/types";
+import type { ActionResult } from "@/lib/types";
 
 /**
  * Natural-language import.
@@ -243,16 +244,24 @@ export async function parseNextChunk(importId: string): Promise<ChunkProgress> {
   const { total } = await progressOf(importId);
 
   try {
-    const result = await askForStructure({
+    const pantry = await loadPantry();
+    const parsed = await askForStructure({
       schema: ImportResultSchema,
       system: IMPORT_SYSTEM,
-      content: importUserPrompt(chunk.text, referenceDate, { index: chunk.idx, total }),
+      content: importUserPrompt(
+        chunk.text,
+        referenceDate,
+        { index: chunk.idx, total },
+        pantryPrompt(pantry),
+      ),
       // Extraction, not deep reasoning: medium keeps each part fast enough to
       // stay inside a hosted request's time limit, and cheaper.
       effort: "medium",
       // Too large a shape for the API's strict mode; validated here instead.
       strict: false,
     });
+    // Swap in saved macros now, while this request's refs ("F3") still mean something.
+    const result = linkToPantry(parsed, pantry);
     await supabase
       .from("import_chunks")
       .update({ status: "done", result, updated_at: new Date().toISOString() })
@@ -547,36 +556,6 @@ async function insertWorkout(
   }
 }
 
-/**
- * Fills in macros from the user's saved default brand when the notes only named
- * a food ("greek yogurt") and the model had to guess. A remembered brand beats
- * an estimate every time.
- */
-function applyDefaultBrand(entry: ParsedDietEntry, defaults: FoodItem[]): ParsedDietEntry {
-  if (entry.protein_g !== null && entry.kcal !== null) return entry;
-  const key = matchKey(entry.name);
-  const match = defaults.find((f) => matchKey(f.name) === key || key.includes(matchKey(f.name)));
-  if (!match) return entry;
-
-  const scale = entry.qty && match.serving_qty ? entry.qty / match.serving_qty : 1;
-  const pick = (fromEntry: number | null, fromFood: number | null) =>
-    fromEntry ?? (fromFood === null ? null : Math.round(fromFood * scale * 10) / 10);
-
-  return {
-    ...entry,
-    brand: entry.brand ?? match.brand,
-    kcal: pick(entry.kcal, match.kcal),
-    protein_g: pick(entry.protein_g, match.protein_g),
-    carbs_g: pick(entry.carbs_g, match.carbs_g),
-    fat_g: pick(entry.fat_g, match.fat_g),
-    fiber_g: pick(entry.fiber_g, match.fiber_g),
-    confidence: "high",
-    note: entry.note
-      ? `${entry.note} (macros from your saved ${match.brand ?? match.name})`
-      : `Macros from your saved ${match.brand ?? match.name}`,
-  };
-}
-
 export async function applyImport(
   _prev: ActionResult | null,
   fd: FormData,
@@ -603,10 +582,12 @@ export async function applyImport(
   const keepWorkouts = new Set(fd.getAll("keep_workout").map(String));
   const keepDietDays = new Set(fd.getAll("keep_diet_day").map(String));
   const keepWeights = new Set(fd.getAll("keep_weight").map(String));
+  const rememberEntries = new Set(fd.getAll("remember_entry").map(String));
 
   let workoutsAdded = 0;
   let entriesAdded = 0;
   let weightsAdded = 0;
+  let remembered = 0;
 
   try {
     // ---- lifts ---------------------------------------------------------------
@@ -624,12 +605,7 @@ export async function applyImport(
     }
 
     // ---- diet ----------------------------------------------------------------
-    const { data: defaultFoods } = await supabase
-      .from("food_items")
-      .select("*")
-      .eq("is_default", true);
-    const defaults = (defaultFoods ?? []) as FoodItem[];
-
+    // Saved-food matching already happened when the notes were read (lib/pantry.ts).
     for (const [dIndex, day] of parsed.diet_days.entries()) {
       if (!keepDietDays.has(String(dIndex))) continue;
       const date = day.date ?? fallbackDate;
@@ -650,7 +626,7 @@ export async function applyImport(
         .eq("date", date);
 
       const rows = day.entries.map((raw, i) => {
-        const entry = applyDefaultBrand(raw, defaults);
+        const entry = raw as LinkedDietEntry;
         const kcal =
           entry.kcal ??
           (entry.protein_g !== null || entry.carbs_g !== null || entry.fat_g !== null
@@ -675,8 +651,27 @@ export async function applyImport(
           confidence: entry.confidence,
           photo_path: record.image_path,
           notes: entry.note,
+          food_item_id: entry.food_item_id ?? null,
+          recipe_id: entry.recipe_id ?? null,
         };
       });
+
+      // Foods the user ticked "Remember" on during review.
+      for (const [ei, entry] of day.entries.entries()) {
+        if (!rememberEntries.has(`${dIndex}:${ei}`) || !entry.name) continue;
+        await rememberFood(user.id, {
+          name: entry.name,
+          brand: entry.brand,
+          qty: entry.qty,
+          unit: entry.unit,
+          kcal: entry.kcal,
+          protein_g: entry.protein_g,
+          carbs_g: entry.carbs_g,
+          fat_g: entry.fat_g,
+          fiber_g: entry.fiber_g,
+        });
+        remembered++;
+      }
 
       if (rows.length) {
         const { error } = await supabase.from("diet_entries").insert(rows);
@@ -722,10 +717,15 @@ export async function applyImport(
     entriesAdded ? `${entriesAdded} food entr${entriesAdded === 1 ? "y" : "ies"}` : null,
     weightsAdded ? `${weightsAdded} weigh-in${weightsAdded === 1 ? "" : "s"}` : null,
   ].filter(Boolean);
+  const rememberedNote = remembered
+    ? ` Saved ${remembered} food${remembered === 1 ? "" : "s"} for next time.`
+    : "";
 
   return {
     ok: true,
-    message: parts.length ? `Imported ${parts.join(", ")}.` : "Nothing was selected to import.",
+    message: parts.length
+      ? `Imported ${parts.join(", ")}.${rememberedNote}`
+      : "Nothing was selected to import.",
   };
 }
 

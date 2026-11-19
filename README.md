@@ -36,6 +36,9 @@ It runs as a web app that installs to your iPhone home screen like a native app.
 - **Targets** per macro. Protein defaults to **0.8 × bodyweight (lb)** and recalculates from your latest weigh-in, so it follows you instead of going stale.
 - **Saved foods with default brands.** Tell it your usual Greek yogurt once; from then on "greek yogurt" uses those macros — still editable per entry when you bought something else.
 - **Recipes.** Save a mix (overnight oats and its ingredients), then log it in one tap and scale by servings.
+- **Imports use your saved foods.** Type "1.5 overnight oats, 200g greek yogurt" and the importer uses your recipe and your default brand. Claude only decides *which* saved item and *how much*; the app recomputes the macros from your saved numbers, so they're never misquoted.
+- **Remember this food.** Anything you log — by hand, or on the import review screen — can be saved for next time with one tick. Optional **Auto-remember** pre-ticks foods you logged with your own numbers (never AI estimates).
+- **Search.** One box over your saved foods, recipes, and everything you've ever logged, with **Add again** on every result. Before you type, it shows what you've eaten most in the last 60 days.
 - **Incomplete days are marked, not faked.** Mark a day *partial* or *untracked* and it's excluded from averages and drawn as a gap in charts. A day you forgot to log dinner is not a 900-calorie day, and the analytics won't pretend it was.
 - Charts: calories over time, and the same window broken out by protein / carbs / fat / fiber.
 

@@ -153,5 +153,15 @@ Either the key was copied incompletely, or the Anthropic account has no credit. 
 **Everything loads but there's no data and no error**
 The schema didn't run. Redo step 1.5 and confirm you copied the whole file.
 
+**"Your database needs a one-line update first" when turning on Auto-remember foods** <a id="food-memory"></a>
+Your database predates the Food memory setting. In Supabase → **SQL Editor**, run:
+
+```sql
+alter table public.profiles
+  add column if not exists auto_remember_foods boolean not null default false;
+```
+
+(Re-running the whole [`supabase/schema.sql`](supabase/schema.sql) does the same; it's safe to run twice.) Everything else about saved foods and search works without it.
+
 **I changed `APP_ENCRYPTION_KEY` and AI features broke**
 Stored keys can no longer be decrypted. Everyone re-enters their API key in Settings; nothing else is lost.

@@ -314,6 +314,99 @@ export function recipeTotals(recipe: Recipe): MacroTotals {
 }
 
 // -----------------------------------------------------------------------------
+// Search
+// -----------------------------------------------------------------------------
+
+/** A LIKE pattern matching `q` anywhere, with LIKE's own wildcards escaped. */
+function containsPattern(q: string) {
+  return `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+export type FoodSearchResult = {
+  foods: FoodItem[];
+  recipes: Recipe[];
+  /** Matching log entries, newest first. */
+  entries: DietEntry[];
+};
+
+/**
+ * Searches saved foods (name or brand), recipes, and everything ever logged
+ * (name or note). Case-insensitive substring match: at personal scale — a few
+ * thousand entries — that's instant without a search index.
+ */
+export async function searchFood(q: string, limit = 60): Promise<FoodSearchResult> {
+  await requireUser();
+  const supabase = await getSupabase();
+  const like = containsPattern(q.trim());
+
+  const [byName, byBrand, recipes, entriesByName, entriesByNote] = await Promise.all([
+    supabase.from("food_items").select("*").ilike("name", like).order("name"),
+    supabase.from("food_items").select("*").ilike("brand", like).order("name"),
+    supabase
+      .from("recipes")
+      .select("id, name, servings, notes, recipe_items ( * )")
+      .ilike("name", like)
+      .order("name"),
+    supabase
+      .from("diet_entries")
+      .select("*")
+      .ilike("name", like)
+      .order("date", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("diet_entries")
+      .select("*")
+      .ilike("notes", like)
+      .order("date", { ascending: false })
+      .limit(limit),
+  ]);
+  for (const r of [byName, byBrand, recipes, entriesByName, entriesByNote]) {
+    if (r.error) throw new Error(r.error.message);
+  }
+
+  const unique = <T extends { id: string }>(...lists: (T[] | null)[]) => {
+    const seen = new Map<string, T>();
+    for (const list of lists) for (const item of list ?? []) seen.set(item.id, item);
+    return [...seen.values()];
+  };
+
+  const entries = unique(entriesByName.data as DietEntry[], entriesByNote.data as DietEntry[])
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    .slice(0, limit);
+
+  return {
+    foods: unique(byName.data as FoodItem[], byBrand.data as FoodItem[]),
+    recipes: (recipes.data ?? []) as unknown as Recipe[],
+    entries,
+  };
+}
+
+/**
+ * The foods logged most often recently, each with its latest entry — what the
+ * search page shows before you type, for one-tap re-logging.
+ */
+export async function frequentFoods(days = 60, top = 12) {
+  await requireUser();
+  const supabase = await getSupabase();
+  const { data, error } = await supabase
+    .from("diet_entries")
+    .select("*")
+    .gte("date", addDays(todayISO(), -days))
+    .order("date", { ascending: false })
+    .limit(1000);
+  if (error) throw new Error(error.message);
+
+  const groups = new Map<string, { latest: DietEntry; count: number }>();
+  for (const e of (data ?? []) as DietEntry[]) {
+    const key = e.name.trim().toLowerCase();
+    const g = groups.get(key);
+    if (g) g.count++;
+    else groups.set(key, { latest: e, count: 1 });
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count).slice(0, top);
+}
+
+// -----------------------------------------------------------------------------
 // Targets & bodyweight
 // -----------------------------------------------------------------------------
 

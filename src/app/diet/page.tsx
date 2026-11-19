@@ -8,9 +8,11 @@ import {
   resolveTargets,
   sumMacros,
 } from "@/lib/data";
+import { getProfile } from "@/lib/supabase/server";
 import {
   deleteDietEntry,
   logFoodItem,
+  rememberEntry,
   logRecipe,
   setDayCompleteness,
   upsertDietEntry,
@@ -35,14 +37,16 @@ export default async function DietPage({
   const date = sp.date ?? todayISO();
   const range = Number(sp.range) || 30;
 
-  const [entries, day, targets, foods, recipes, totalsSeries] = await Promise.all([
+  const [entries, day, targets, foods, recipes, totalsSeries, profile] = await Promise.all([
     getDietEntries(date),
     getDietDay(date),
     resolveTargets(),
     listFoodItems(),
     listRecipes(),
     dailyTotals(range),
+    getProfile(),
   ]);
+  const autoRemember = profile?.auto_remember_foods ?? false;
 
   const totals = sumMacros(entries);
   const completeness = day?.completeness ?? (entries.length ? "complete" : "untracked");
@@ -53,6 +57,9 @@ export default async function DietPage({
         title="Diet"
         right={
           <span className="flex gap-3 text-sm">
+            <Link href={`/diet/search?date=${date}`} className="text-accent">
+              Search
+            </Link>
             <Link href="/diet/foods" className="text-accent">
               Foods
             </Link>
@@ -153,10 +160,18 @@ export default async function DietPage({
                       </div>
                       {e.notes && <p className="mt-1 text-xs text-muted">{e.notes}</p>}
                     </div>
-                    <form action={deleteDietEntry}>
-                      <input type="hidden" name="id" value={e.id} />
-                      <MiniSubmit title="Delete entry">×</MiniSubmit>
-                    </form>
+                    <div className="flex shrink-0 gap-1">
+                      {!e.food_item_id && !e.recipe_id && (
+                        <form action={rememberEntry}>
+                          <input type="hidden" name="id" value={e.id} />
+                          <MiniSubmit title="Remember this food (save to Saved foods)">☆</MiniSubmit>
+                        </form>
+                      )}
+                      <form action={deleteDietEntry}>
+                        <input type="hidden" name="id" value={e.id} />
+                        <MiniSubmit title="Delete entry">×</MiniSubmit>
+                      </form>
+                    </div>
                   </div>
 
                   <Disclosure label="Edit">
@@ -196,8 +211,25 @@ export default async function DietPage({
         {/* Add entry */}
         <Card title="Add food">
           <div className="space-y-3">
+            {/* Plain GET form to the search page: foods, recipes and past entries. */}
+            <form action="/diet/search" className="flex gap-2" role="search">
+              <input type="hidden" name="date" value={date} />
+              <Input
+                name="q"
+                type="search"
+                placeholder="Search your foods, recipes and log"
+                aria-label="Search your foods, recipes and log"
+              />
+              <button
+                type="submit"
+                className="min-h-11 shrink-0 rounded-xl border border-line px-3 text-sm text-accent"
+              >
+                Search
+              </button>
+            </form>
+
             <Disclosure label="Type it in" defaultOpen={entries.length === 0}>
-              <EntryForm date={date} />
+              <EntryForm date={date} autoRemember={autoRemember} />
             </Disclosure>
 
             {foods.length > 0 && (
@@ -335,9 +367,11 @@ export default async function DietPage({
 function EntryForm({
   date,
   entry,
+  autoRemember = false,
 }: {
   date: string;
   entry?: Awaited<ReturnType<typeof getDietEntries>>[number];
+  autoRemember?: boolean;
 }) {
   return (
     <form action={upsertDietEntry} className="space-y-3">
@@ -384,6 +418,17 @@ function EntryForm({
       <Field label="Note">
         <Textarea name="notes" rows={2} defaultValue={entry?.notes ?? ""} />
       </Field>
+      {!entry && (
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input
+            type="checkbox"
+            name="remember"
+            defaultChecked={autoRemember}
+            className="h-4 w-4 accent-accent"
+          />
+          Remember this food — save it with these numbers for next time
+        </label>
+      )}
       <SubmitButton pendingLabel="Saving…">{entry ? "Save changes" : "Add entry"}</SubmitButton>
     </form>
   );

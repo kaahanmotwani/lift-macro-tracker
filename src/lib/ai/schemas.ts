@@ -89,6 +89,9 @@ export const DietEntrySchema = z.object({
     .enum(["high", "medium", "low"])
     .describe("high = user gave numbers; medium = named brand/portion; low = rough guess."),
   note: text("Portion assumption or caveat."),
+  saved_ref: text(
+    "Ref of the user's saved food or recipe (e.g. 'F3', 'R1') when this entry is one of them.",
+  ),
 });
 
 export const DietDaySchema = z.object({
@@ -171,6 +174,14 @@ export type ImportResult = Blankable<z.infer<typeof ImportResultSchema>>;
 export type ParsedWorkout = ImportResult["workouts"][number];
 export type ParsedDietDay = ImportResult["diet_days"][number];
 export type ParsedDietEntry = ParsedDietDay["entries"][number];
+/**
+ * A diet entry after it has been matched to one of the user's saved foods or
+ * recipes (see lib/pantry.ts). The ids are added by the app, never by Claude.
+ */
+export type LinkedDietEntry = ParsedDietEntry & {
+  food_item_id?: string | null;
+  recipe_id?: string | null;
+};
 export type ParsedBodyweight = ImportResult["bodyweight"][number];
 export type PhotoEstimate = Blankable<z.infer<typeof PhotoEstimateSchema>>;
 export type MicroSummary = Blankable<z.infer<typeof MicroSummarySchema>>;

@@ -76,15 +76,18 @@ Exercises
 Food and bodyweight
 - Food without stated macros: estimate from the food and portion and mark confidence
   'medium' or 'low'. Estimate micronutrients — users never log those.
-- If the user says they didn't log everything that day, completeness = 'partial'.`;
+- If the user says they didn't log everything that day, completeness = 'partial'.
+- If the user's saved foods and recipes are listed, follow the instructions that come
+  with that list. Otherwise leave saved_ref as "".`;
 
 export function importUserPrompt(
   text: string,
   referenceDate: string,
   part?: { index: number; total: number },
+  pantry = "",
 ) {
   return `Reference date (today): ${referenceDate}
-${
+${pantry ? `\n${pantry}\n\n` : ""}${
   part && part.total > 1
     ? `This is part ${part.index + 1} of ${part.total} of one long paste, split between sessions. Parse only what is in this part.\n`
     : ""

@@ -7,7 +7,7 @@ import { Badge, Card, Empty } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/form";
 import { TopBar } from "@/components/nav";
 import { formatDate, fromLbs, round, todayISO } from "@/lib/units";
-import type { ImportResult } from "@/lib/ai/schemas";
+import type { ImportResult, LinkedDietEntry } from "@/lib/ai/schemas";
 
 /**
  * Reading one piece of a long paste can take a minute or two; allow up to the
@@ -66,6 +66,7 @@ export default async function ReviewImportPage({
   const unit = profile?.weight_unit ?? "lb";
   const parsed = record.parsed as ImportResult | null;
   const applied = record.status === "applied";
+  const autoRemember = profile?.auto_remember_foods ?? false;
 
   const w = (lbs: number | null) =>
     lbs === null ? "BW" : `${round(fromLbs(lbs, unit), 1)}${unit}`;
@@ -209,23 +210,46 @@ export default async function ReviewImportPage({
                   <p className="mb-2 text-xs text-amber-300">{day.completeness_note}</p>
                 )}
                 <ul className="divide-y divide-line text-sm">
-                  {day.entries.map((e, ei) => (
-                    <li key={ei} className="py-2">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate">
-                          {e.name}
-                          {e.brand && <span className="text-muted"> — {e.brand}</span>}
-                        </span>
-                        {e.confidence !== "high" && <Badge tone="warn">{e.confidence}</Badge>}
-                      </div>
-                      <p className="tabular text-xs text-muted">
-                        {e.qty ? `${e.qty}${e.unit ? ` ${e.unit}` : ""} · ` : ""}
-                        {e.kcal ?? "?"} kcal · P{e.protein_g ?? "?"} · C{e.carbs_g ?? "?"} · F
-                        {e.fat_g ?? "?"} · Fib{e.fiber_g ?? "?"}
-                      </p>
-                      {e.note && <p className="text-xs text-muted italic">{e.note}</p>}
-                    </li>
-                  ))}
+                  {day.entries.map((raw, ei) => {
+                    const e = raw as LinkedDietEntry;
+                    const linked = e.recipe_id ? "recipe" : e.food_item_id ? "food" : null;
+                    return (
+                      <li key={ei} className="py-2">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate">
+                            {e.name}
+                            {e.brand && <span className="text-muted"> — {e.brand}</span>}
+                          </span>
+                          {linked ? (
+                            <Badge tone="good">your saved {linked}</Badge>
+                          ) : (
+                            e.confidence !== "high" && <Badge tone="warn">{e.confidence}</Badge>
+                          )}
+                        </div>
+                        <p className="tabular text-xs text-muted">
+                          {e.qty ? `${e.qty}${e.unit ? ` ${e.unit}` : ""} · ` : ""}
+                          {e.kcal ?? "?"} kcal · P{e.protein_g ?? "?"} · C{e.carbs_g ?? "?"} · F
+                          {e.fat_g ?? "?"} · Fib{e.fiber_g ?? "?"}
+                        </p>
+                        {e.note && <p className="text-xs text-muted italic">{e.note}</p>}
+                        {!linked && !applied && (
+                          <label className="mt-1 flex items-center gap-2 text-xs text-muted">
+                            <input
+                              type="checkbox"
+                              name="remember_entry"
+                              value={`${di}:${ei}`}
+                              // Auto-remember only pre-ticks foods logged with your own
+                              // numbers; an AI estimate shouldn't become a "saved" food
+                              // unless you choose that.
+                              defaultChecked={autoRemember && e.confidence === "high"}
+                              className="h-4 w-4 accent-accent"
+                            />
+                            Remember this food
+                          </label>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </Card>
             ))}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProfile, requireUser } from "@/lib/supabase/server";
 import { resolveTargets } from "@/lib/data";
-import { saveApiKey, saveProfile } from "@/app/actions/settings";
+import { saveApiKey, saveFoodMemory, saveProfile } from "@/app/actions/settings";
 import { saveTargets } from "@/app/actions/diet";
 import { Button, Card, Field, Input, Select, Stat } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/form";
@@ -41,6 +41,40 @@ export default async function SettingsPage() {
             <SubmitButton>Save</SubmitButton>
           </ActionForm>
           <p className="mt-3 text-xs text-muted">Signed in as {user.email}</p>
+        </Card>
+
+        <Card title="Food memory">
+          <p className="mb-3 text-sm text-muted">
+            Your{" "}
+            <Link href="/diet/foods" className="text-accent">
+              saved foods
+            </Link>{" "}
+            and{" "}
+            <Link href="/diet/recipes" className="text-accent">
+              recipes
+            </Link>{" "}
+            are always used when you import notes: &ldquo;overnight oats&rdquo; gets your
+            recipe&rsquo;s exact macros instead of an estimate. Anything you log can be saved with
+            &ldquo;Remember this food&rdquo; (or ☆ on a logged item).
+          </p>
+          <ActionForm action={saveFoodMemory} className="space-y-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="auto_remember_foods"
+                defaultChecked={profile?.auto_remember_foods ?? false}
+                className="mt-0.5 h-4 w-4 accent-accent"
+              />
+              <span>
+                Auto-remember foods
+                <span className="block text-xs text-muted">
+                  Pre-ticks &ldquo;Remember this food&rdquo; for foods you log with your own
+                  numbers. AI estimates are never saved unless you tick them yourself.
+                </span>
+              </span>
+            </label>
+            <SubmitButton variant="secondary">Save</SubmitButton>
+          </ActionForm>
         </Card>
 
         <Card title="Anthropic API key">

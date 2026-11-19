@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getSupabase, requireUser } from "@/lib/supabase/server";
 import { kcalFromMacros, matchKey, todayISO } from "@/lib/units";
 import { getDietEntries } from "@/lib/data";
+import { rememberFood } from "@/lib/pantry";
 import type { ActionResult } from "@/lib/types";
 
 function str(fd: FormData, key: string): string | null {
@@ -85,7 +87,82 @@ export async function upsertDietEntry(fd: FormData): Promise<void> {
     // Touch the day so it isn't treated as untracked.
     await ensureDietDay(date);
   }
+  if (bool(fd, "remember")) {
+    await rememberFood(user.id, {
+      name,
+      qty: row.qty,
+      unit: row.unit,
+      kcal,
+      protein_g: protein,
+      carbs_g: carbs,
+      fat_g: fat,
+      fiber_g: row.fiber_g,
+    });
+    revalidatePath("/diet/foods");
+  }
   revalidatePath("/diet");
+}
+
+/** "Remember" on something already logged: saves it to Saved foods. */
+export async function rememberEntry(fd: FormData): Promise<void> {
+  const user = await requireUser();
+  const supabase = await getSupabase();
+  const id = str(fd, "id");
+  if (!id) return;
+  const { data: e } = await supabase.from("diet_entries").select("*").eq("id", id).single();
+  if (!e) return;
+  await rememberFood(user.id, {
+    name: e.name,
+    qty: e.qty,
+    unit: e.unit,
+    kcal: e.kcal,
+    protein_g: e.protein_g,
+    carbs_g: e.carbs_g,
+    fat_g: e.fat_g,
+    fiber_g: e.fiber_g,
+  });
+  revalidatePath("/diet");
+  revalidatePath("/diet/foods");
+}
+
+/** Logs a past entry again on another day: same food, same amount, same macros. */
+export async function relogEntry(fd: FormData): Promise<void> {
+  const user = await requireUser();
+  const supabase = await getSupabase();
+  const id = str(fd, "id");
+  const date = str(fd, "date") ?? todayISO();
+  if (!id) return;
+  const { data: e } = await supabase.from("diet_entries").select("*").eq("id", id).single();
+  if (!e) return;
+  const existing = await getDietEntries(date);
+  await supabase.from("diet_entries").insert({
+    user_id: user.id,
+    date,
+    meal: str(fd, "meal") ?? e.meal,
+    position: existing.length,
+    name: e.name,
+    qty: e.qty,
+    unit: e.unit,
+    kcal: e.kcal,
+    protein_g: e.protein_g,
+    carbs_g: e.carbs_g,
+    fat_g: e.fat_g,
+    fiber_g: e.fiber_g,
+    micros: e.micros ?? {},
+    source: e.source === "photo" || e.source === "text_import" ? "manual" : e.source,
+    confidence: e.confidence,
+    food_item_id: e.food_item_id,
+    recipe_id: e.recipe_id,
+    notes: e.notes,
+  });
+  await ensureDietDay(date);
+  revalidatePath("/diet");
+  backToDay(fd, date);
+}
+
+/** Forms on the search page set `back_to_day`, so adding something lands you on that day. */
+function backToDay(fd: FormData, date: string) {
+  if (bool(fd, "back_to_day")) redirect(`/diet?date=${date}`);
 }
 
 export async function deleteDietEntry(fd: FormData): Promise<void> {
@@ -178,6 +255,7 @@ export async function logRecipe(fd: FormData): Promise<void> {
   });
   await ensureDietDay(date);
   revalidatePath("/diet");
+  backToDay(fd, date);
 }
 
 /** Adds a saved food, scaled by how many servings were eaten. */
@@ -216,6 +294,7 @@ export async function logFoodItem(fd: FormData): Promise<void> {
   });
   await ensureDietDay(date);
   revalidatePath("/diet");
+  backToDay(fd, date);
 }
 
 // -----------------------------------------------------------------------------

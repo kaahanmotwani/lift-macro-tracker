@@ -18,6 +18,8 @@ create table if not exists public.profiles (
   anthropic_key_ciphertext  text,
   anthropic_key_hint        text,            -- last 4 chars, for "sk-...abcd" display
   model                     text not null default 'claude-opus-5',
+  -- Pre-tick "Remember this food" for foods logged with your own numbers.
+  auto_remember_foods       boolean not null default false,
   created_at                timestamptz not null default now(),
   updated_at                timestamptz not null default now()
 );
@@ -405,3 +407,7 @@ alter table public.imports add constraint imports_status_check
   check (status in ('parsing','parsed','applied','failed'));
 
 grant select, insert, update, delete on public.import_chunks to authenticated;
+
+-- Food memory: the "Auto-remember foods" setting.
+alter table public.profiles
+  add column if not exists auto_remember_foods boolean not null default false;

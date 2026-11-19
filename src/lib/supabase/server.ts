@@ -60,6 +60,8 @@ export type Profile = {
   anthropic_key_ciphertext: string | null;
   anthropic_key_hint: string | null;
   model: string;
+  /** Missing until the database update that adds it has been run. */
+  auto_remember_foods?: boolean;
 };
 
 export async function getProfile(): Promise<Profile | null> {

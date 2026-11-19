@@ -40,6 +40,31 @@ export async function saveProfile(
   return { ok: true, message: "Preferences saved." };
 }
 
+/** The "Auto-remember foods" switch. Kept separate from saveProfile so that an
+ * un-upgraded database only breaks this one setting, not the whole form. */
+export async function saveFoodMemory(
+  _prev: ActionResult | null,
+  fd: FormData,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  const supabase = await getSupabase();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ auto_remember_foods: fd.get("auto_remember_foods") === "on" })
+    .eq("id", user.id);
+  if (error) {
+    return {
+      ok: false,
+      error: /auto_remember_foods/.test(error.message)
+        ? "Your database needs a one-line update first — see Troubleshooting in DEPLOY.md."
+        : error.message,
+    };
+  }
+  revalidatePath("/settings");
+  revalidatePath("/diet");
+  return { ok: true, message: "Saved." };
+}
+
 /**
  * Stores the user's own Anthropic API key, encrypted. We verify it works before
  * saving — a key that silently fails at 11pm when you're trying to import a
