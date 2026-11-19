@@ -1,0 +1,21 @@
+{
+  "name": "Lift & Macro Tracker",
+  "short_name": "Tracker",
+  "description": "Track lifts, macros, and bodyweight. Import from plain notes, estimate meals from photos, and see whether you're actually getting stronger.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0b0d",
+  "theme_color": "#0a0b0d",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Import notes", "url": "/import" },
+    { "name": "Log food", "url": "/diet" },
+    { "name": "Log weight", "url": "/weight" }
+  ]
+}

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0b0d;
+  --color-surface: #141619;
+  --color-surface-2: #1c1f24;
+  --color-line: #292d34;
+  --color-muted: #8b929e;
+  --color-text: #eceef1;
+  --color-accent: #f97316;
+  --color-accent-soft: #7c3a12;
+  --color-protein: #f97316;
+  --color-carbs: #38bdf8;
+  --color-fat: #facc15;
+  --color-fiber: #4ade80;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* Respect the iPhone home indicator so the bottom nav isn't half-swallowed. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Stop iOS Safari from zooming in every time a numeric field is focused. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Numeric fields read much better tabular when you're scanning a set list. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
