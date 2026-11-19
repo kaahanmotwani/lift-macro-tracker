@@ -293,6 +293,20 @@ create table if not exists public.insights (
 create index if not exists insights_user_idx on public.insights(user_id, created_at desc);
 
 -- -----------------------------------------------------------------------------
+-- TABLE PRIVILEGES
+-- Newer Supabase projects no longer grant the API roles access to tables created
+-- in the SQL editor, so without this every signed-in request fails with
+-- "permission denied for table …". Only `authenticated` is granted: the app never
+-- reads data while signed out, so anonymous visitors get no table access at all.
+-- These grants say "signed-in users may use these tables"; the RLS policies below
+-- then narrow that to "…but only their own rows".
+-- -----------------------------------------------------------------------------
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to authenticated;
+
+-- -----------------------------------------------------------------------------
 -- ROW LEVEL SECURITY
 -- Every table is user-scoped. Without these policies one user could read
 -- another's data; with them, the database itself enforces isolation even if the

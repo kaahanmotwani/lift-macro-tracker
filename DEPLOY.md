@@ -129,6 +129,9 @@ The value isn't a valid 32-byte base64 string. Re-run `openssl rand -base64 32` 
 **"Invalid path specified in request URL" when requesting a sign-in link**
 Your deployment predates the URL fix, or the Supabase URL has an extra path on it. Set `NEXT_PUBLIC_SUPABASE_URL` to the bare `https://<something>.supabase.co` and **redeploy** — `NEXT_PUBLIC_` values are baked in at build time, so editing the variable alone changes nothing until the next build.
 
+**"An error occurred in the Server Components render" right after signing in**
+The tables exist but signed-in users can't access them — usually because the schema was run before it included the `grant` statements. Re-run [`supabase/schema.sql`](supabase/schema.sql) (it's safe to run twice).
+
 **Sign-in link opens but I'm still logged out**
 The Redirect URL in step 3 doesn't match your actual domain. It must be exactly `https://your-domain/auth/callback`, including `https://`.
 
